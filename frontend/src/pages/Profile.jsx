@@ -1,6 +1,6 @@
 // frontend/src/pages/Profile.jsx
 import React, { useEffect, useState, useContext } from "react";
-import "../styles/Profile.css";
+import "../styles/profile.css";
 import api from "../services/api";
 import { AuthContext } from "../contexts/AuthContext";
 
