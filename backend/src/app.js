@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const bodyParser = require("body-parser");
+
 const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
 const protectedRoutes = require("./routes/protected.routes");
@@ -15,9 +16,21 @@ const ordersListRoutes = require("./routes/ordersList.routes");
 const addressesRoutes = require("./routes/addresses.routes");
 
 const app = express();
-app.use(cors());
+
+/**
+ * CORS config:
+ * - If FRONTEND_URL is set in env (recommended), allow only that origin.
+ * - Otherwise allow any origin (useful for quick testing; tighten for production).
+ */
+const frontendOrigin = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || process.env.VITE_API_URL;
+const corsOptions = frontendOrigin
+  ? { origin: frontendOrigin, credentials: true }
+  : { origin: true, credentials: true }; // echo origin, allow credentials
+
+app.use(cors(corsOptions));
 
 // ✅ VERY IMPORTANT: mount webhook BEFORE express.json()
+// Webhooks (Stripe etc.) need raw body to validate signatures.
 app.use("/webhook", bodyParser.raw({ type: "application/json" }), webhookRoute);
 
 // ❗ Now it's safe to enable express.json()
@@ -26,30 +39,35 @@ app.use(express.json());
 // health
 app.get("/", (req, res) => res.json({ ok: true }));
 
-// mount auth routes (register, login, forgot, reset)
-app.use("/api/auth", authRoutes);
-app.use("/api/auth", userRoutes);
+/**
+ * Mount routes on BOTH the /api/... namespace AND the short form /... namespace.
+ * This provides backward compatibility for clients that use /auth/login instead of /api/auth/login.
+ * Example: both POST /auth/login and POST /api/auth/login will be handled by authRoutes.
+ */
 
-// protected example
-app.use("/api/protected", protectedRoutes);
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/auth', '/auth'], userRoutes);
 
-// menu
-app.use("/api/menu", menuRoutes);
+app.use(['/api/protected', '/protected'], protectedRoutes);
 
-// payments
-app.use("/api/payments", paymentRoutes);
+app.use(['/api/menu', '/menu'], menuRoutes);
 
-// orders (existing routes)
-app.use("/api/orders", ordersRoutes);
+app.use(['/api/payments', '/payments'], paymentRoutes);
 
-// orders-list (admin/reporting) — mounted under the same base so /api/orders/list works
-app.use("/api/orders", ordersListRoutes);
+app.use(['/api/orders', '/orders'], ordersRoutes);
+
+// orders-list (admin/reporting) — mounted under the same base so /api/orders/list and /orders/list work
+app.use(['/api/orders', '/orders'], ordersListRoutes);
 
 // live orders SSE
-app.use("/api/live-orders", liveordersRoutes);
+app.use(['/api/live-orders', '/live-orders'], liveordersRoutes);
 
 // addresses
-app.use("/api/addresses", addressesRoutes);
+app.use(['/api/addresses', '/addresses'], addressesRoutes);
+
+// serve uploads if needed (optional — your server.js already mounts /uploads after listen in many setups)
+// Uncomment if you want app to serve uploads directly:
+// app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // error handler
 app.use((err, req, res, next) => {

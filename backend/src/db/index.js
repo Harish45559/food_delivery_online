@@ -24,7 +24,10 @@ const connectionString = buildConnectionString();
 
 function maskPwd(conn) {
   try {
-    return conn.replace(/(\/\/[^:]+:)([^@]+)(@)/, (_, a, p, b) => `${a}${'<hidden>'}${b}`);
+    return conn.replace(
+      /(\/\/[^:]+:)([^@]+)(@)/,
+      (_, a, p, b) => `${a}${'<hidden>'}${b}`
+    );
   } catch (e) {
     return conn;
   }
@@ -33,7 +36,14 @@ function maskPwd(conn) {
 console.log('Using DB connection (masked):', maskPwd(connectionString));
 console.log('NOTE: If the password contained special characters, it was URL-encoded.');
 
-const pool = new Pool({ connectionString });
+// IMPORTANT: Render PostgreSQL requires SSL.
+// rejectUnauthorized:false avoids certificate issues inside Node environments.
+const pool = new Pool({
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 pool.on('error', (err) => {
   console.error('Unexpected PG pool error:', err && err.stack ? err.stack : err);
