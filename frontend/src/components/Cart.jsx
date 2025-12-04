@@ -1,6 +1,6 @@
 // frontend/src/components/Cart.jsx
 import React, { useEffect, useState } from "react";
-import "../styles/Menu.css";
+import "../styles/menu.css";
 
 function formatPenceToGBP(pence) {
   const n = Number(pence) || 0;
