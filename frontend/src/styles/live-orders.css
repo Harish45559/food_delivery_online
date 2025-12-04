@@ -1,0 +1,318 @@
+/* client/src/styles/live-orders.css
+   Clean, compact layout for Live Orders — FINAL
+   Replace the entire file with this content.
+*/
+
+:root {
+  --bg: #f7fafc;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --success: #16a34a;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --glass: rgba(2, 6, 23, 0.04);
+  --radius: 12px;
+  --shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+  --card-max-width: 360px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
+}
+
+body {
+  background: var(--bg);
+  margin: 0;
+}
+
+/* page */
+.live-orders-page {
+  padding: 22px;
+  max-width: 1200px;
+  margin: 18px auto;
+  box-sizing: border-box;
+  min-height: 72vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.page-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+/* grid list */
+.live-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  padding: 8px 0;
+}
+
+/* card */
+.live-order-card {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(2, 6, 23, 0.04);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: var(--card-max-width);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 260px; /* keeps cards visually stable */
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle highlight for new orders (NO thick orange border) */
+.new-order {
+  outline: 2px solid rgba(245, 158, 11, 0.18);
+  box-shadow: 0 10px 26px rgba(245, 158, 11, 0.04);
+}
+
+/* header row */
+.live-order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* left meta column */
+.live-order-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.live-order-id {
+  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
+}
+.live-ts {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Order Type (left) */
+.order-type-top {
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #0f172a;
+  letter-spacing: 0.6px;
+  margin-top: 4px;
+}
+
+/* customer info */
+.customer-info {
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 3px solid #eef2f6;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cust-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.cust-phone {
+  color: var(--muted);
+  font-size: 13px;
+}
+.cust-address {
+  font-size: 13px;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+/* right column: top row (paid-by) and status+total row */
+.live-order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+/* top-row (PAID BY badge aligned at very top) */
+.paid-by-top {
+  font-size: 12px;
+  font-weight: 900;
+  background: #eef2ff;
+  color: #07103a;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(2, 6, 23, 0.06);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateY(-2px);
+}
+
+/* status + total in same small row */
+.status-total-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+/* status badge */
+.live-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  color: #fff;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+.live-paid {
+  background: var(--success);
+}
+.live-preparing {
+  background: var(--warn);
+  color: #111;
+}
+.live-prepared {
+  background: var(--accent);
+}
+.live-cancelled {
+  background: var(--danger);
+}
+.live-pending {
+  background: #475569;
+}
+
+/* total */
+.live-total {
+  font-weight: 900;
+  color: #111;
+  font-size: 15px;
+}
+
+/* items area: make it scrollable if content is long so card doesn't grow infinitely */
+.live-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px; /* prevents oversized card */
+  overflow: auto;
+  padding-right: 6px; /* room for scrollbar */
+}
+.live-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid rgba(2, 6, 23, 0.03);
+}
+.item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.item-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.item-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+.item-right {
+  font-weight: 800;
+}
+
+/* notes */
+.live-notes {
+  margin-top: 6px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid rgba(2, 6, 23, 0.02);
+}
+.notes-text {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+/* controls & elapsed */
+.live-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.elapsed {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* buttons (compact) */
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.03);
+}
+.btn-accept {
+  background: var(--success);
+  color: #fff;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-reject {
+  background: var(--danger);
+  color: #fff;
+}
+.btn.small {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+/* small screens: stack nicely */
+@media (max-width: 800px) {
+  .live-order-card {
+    max-width: 100%;
+    min-height: 220px;
+  }
+  .live-order-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .live-order-right {
+    align-self: flex-end;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* utility */
+.loading,
+.empty {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(2, 6, 23, 0.05);
+  color: var(--muted);
+}

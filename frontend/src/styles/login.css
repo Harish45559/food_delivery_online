@@ -1,0 +1,19 @@
+/* login.css - black & white theme */
+.auth-container {
+  max-width:480px;
+  margin:54px auto;
+  padding:26px;
+  border-radius:14px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.auth-title { font-size:22px; font-weight:800; color:var(--text); }
+.auth-sub { color:var(--muted); margin-bottom:16px; }
+
+.form-row { display:flex; flex-direction:column; gap:12px; }
+.input { height:46px; padding:10px 12px; border-radius:10px; border:1px solid rgba(15,23,32,0.06); }
+
+.primary-cta { width:100%; padding:12px; border-radius:10px; background:var(--accent); color:#fff; border:none; font-weight:800; }
+.secondary-link { text-align:right; margin-top:8px; color:var(--muted); }
+.error { color:var(--danger); font-size:13px; margin-top:6px; }

@@ -1,0 +1,108 @@
+/* Page container */
+.checkout-page {
+  padding: 22px;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-height: 72vh;
+}
+
+/* Layout: two-column with summary on right */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 880px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card panels */
+.panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 30px rgba(2,6,23,0.06);
+  border: 1px solid rgba(15,23,32,0.04);
+}
+
+/* Payment box */
+.payment-card {
+  padding: 14px;
+}
+
+/* Label + input wrapper */
+.form-row {
+  margin-bottom: 12px;
+}
+
+/* CardElement wrapper */
+.stripe-card-wrapper {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: #fff;
+}
+
+/* Primary CTA */
+.btn-primary {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #00A663;
+  color: #fff;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn-primary:active { transform: translateY(1px); }
+.btn-primary[disabled] { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* Order summary styles */
+.order-summary h4 { margin: 0 0 8px 0; font-size: 16px; }
+.order-line {
+  display:flex; justify-content:space-between; align-items:center;
+  padding: 8px 0; border-bottom: 1px solid #f3f4f6;
+}
+.order-line:last-child { border-bottom: none; }
+
+/* total row */
+.summary-total {
+  display:flex; justify-content:space-between; align-items:center;
+  font-weight: 900; font-size: 16px; margin-top: 12px;
+}
+
+/* small helper text */
+.helper {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* compact list item */
+.summary-item {
+  display:flex; justify-content:space-between; align-items:center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+/* subtle code block for items JSON if needed */
+.items-pre {
+  background: #f9fafb;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow-x: auto;
+  border: 1px solid rgba(15,23,32,0.04);
+}
+
+/* mobile spacing tweaks */
+@media (max-width: 480px) {
+  .panel { padding: 12px; border-radius: 10px; }
+  .btn-primary { padding: 10px 12px; }
+}

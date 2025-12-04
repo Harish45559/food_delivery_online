@@ -1,0 +1,74 @@
+/* otp.css — styles for OTP entry or reset token page */
+
+.otp-wrapper {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 26px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(2,6,23,0.06);
+  text-align: center;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.otp-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f1720;
+  margin-bottom: 8px;
+}
+
+.otp-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+
+/* OTP input row: several small inputs or a single input */
+.otp-row {
+  display:flex;
+  gap: 8px;
+  justify-content:center;
+  margin-bottom: 14px;
+}
+
+.otp-input {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  text-align:center;
+  font-size: 22px;
+  border: 1px solid rgba(15,23,32,0.08);
+  outline: none;
+}
+
+.otp-input:focus {
+  border-color: rgba(0,166,99,0.9);
+  box-shadow: 0 6px 18px rgba(0,166,99,0.06);
+}
+
+.otp-submit {
+  margin-top: 6px;
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  background: #00A663;
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resend {
+  display:block;
+  margin-top:12px;
+  font-size: 14px;
+  color:#0f1720;
+  opacity:0.9;
+}
+
+/* small screens */
+@media (max-width:520px){
+  .otp-input { width: 46px; height:46px; font-size:18px; }
+  .otp-wrapper { margin: 18px; padding: 18px; }
+}

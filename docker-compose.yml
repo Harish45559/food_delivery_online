@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppassword
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://appuser:apppassword@db:5432/appdb
+      JWT_SECRET: supersecretjwt
+      JWT_EXPIRES_IN: 7d
+      FROM_EMAIL: 'MyApp <no-reply@example.com>'
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+      SMTP_USER: user
+      SMTP_PASS: pass
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - '4000:4000'
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - '5173:80'
+volumes:
+  db-data:

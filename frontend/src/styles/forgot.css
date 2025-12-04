@@ -1,0 +1,13 @@
+/* forgot.css - black & white */
+.forgot-card {
+  max-width:520px;
+  margin:48px auto;
+  padding:22px;
+  background:var(--surface);
+  border-radius:14px;
+  box-shadow:var(--card-shadow);
+}
+.forgot-title { font-weight:800; font-size:20px; color:var(--text); }
+.forgot-desc { color:var(--muted); margin-bottom:12px; }
+.input { height:46px; padding:10px; border-radius:10px; border:1px solid rgba(15,23,32,0.06); }
+.send-btn { background:var(--accent); color:#fff; padding:12px; border-radius:10px; border:none; width:100%; font-weight:800; }

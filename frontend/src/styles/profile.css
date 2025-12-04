@@ -1,0 +1,51 @@
+/* frontend/src/styles/Profile.css */
+/* Profile page styling, avatar upload, responsive */
+
+.profile-page { padding: 18px 0; }
+.profile-card { max-width: 1100px; margin: 0 auto; padding: 18px; border-radius: 12px; }
+.profile-header {
+  display:flex; align-items:center; gap:16px; margin-bottom: 12px;
+}
+.avatar-wrap { display:flex; gap:12px; align-items:center; }
+.avatar-preview {
+  width:96px; height:96px; border-radius: 14px; overflow:hidden; background:#f3f4f6; border:1px solid rgba(15,23,32,0.06); display:flex; align-items:center; justify-content:center;
+}
+.avatar-img { width:100%; height:100%; object-fit:cover; display:block;}
+.avatar-placeholder { font-size:32px; font-weight:800; color:#374151; }
+
+.avatar-controls { display:flex; flex-direction:column; gap:8px; }
+.avatar-hint { font-size:12px; color:#6b7280; margin-top:6px; }
+
+/* form layout */
+.profile-form { margin-top: 8px; }
+.grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.label { display:block; font-weight:700; margin-top:12px; margin-bottom:6px; color:#0f1720; }
+.input { width:100%; height:44px; padding:10px 12px; border-radius:10px; border:1px solid rgba(15,23,32,0.06); }
+.input[readonly] { background:#f8faf9; }
+.mt-12 { margin-top:12px; }
+.helper { color: #059669; } /* green success */
+.error { color:#ef4444; }
+
+.submit-btn {
+  background: linear-gradient(180deg,#00A663,#008f4f);
+  color:#fff;
+  padding:12px 16px;
+  border-radius:10px;
+  border:none;
+  font-weight:800;
+}
+
+/* buttons fallback styles */
+.btn-outline {
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid rgba(15,23,32,0.06);
+  background:transparent;
+  cursor:pointer;
+}
+
+/* responsive */
+@media (max-width:900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .avatar-preview { width:80px; height:80px; }
+}

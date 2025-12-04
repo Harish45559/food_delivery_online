@@ -1,0 +1,28 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# Dotenv
+*.env
+.env.local
+.env.*.local
+
+# Build output
+frontend/dist/
+backend/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Docker
+docker-compose.override.yml

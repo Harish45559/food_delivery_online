@@ -1,0 +1,140 @@
+/* ================================
+   APPSHELL — FIXED SIDEBAR LAYOUT
+================================ */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fff, #fafafa);
+}
+
+/* --------------------------------
+   FIXED SIDEBAR (never stretches)
+-------------------------------- */
+.app-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+
+  background: #0b0b0b;
+  color: var(--inverse-text);
+
+  padding: 20px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+
+  overflow-y: auto;
+  flex-shrink: 0;
+
+  z-index: 50;
+}
+
+/* brand + user info */
+.brand {
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--inverse-text);
+  letter-spacing: 0.2px;
+  margin-bottom: 8px;
+}
+
+.user-info {
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.user-name {
+  font-weight: 700;
+  color: #fff;
+}
+
+.user-role {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* nav items */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-link.active {
+  background: #fff;
+  color: #0b0b0b;
+}
+
+/* bottom area */
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* -------------------------
+   MAIN CONTENT (pushed right)
+------------------------- */
+.app-main {
+  flex: 1;
+  padding: 26px;
+  margin-left: 240px; /* important: sidebar width */
+  background: linear-gradient(180deg, #fff, #fbfdfc);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.app-main .card {
+  border-radius: 14px;
+  padding: 18px;
+}
+
+/* responsive */
+@media (max-width: 900px) {
+  .app-sidebar {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    padding: 12px;
+  }
+
+  .app-main {
+    margin-left: 72px;
+  }
+
+  .nav-link {
+    font-size: 12px;
+    padding: 8px;
+  }
+}

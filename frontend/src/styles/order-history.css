@@ -1,0 +1,98 @@
+/* client/src/styles/order-history.css */
+.order-history-page {
+  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-height: 68vh;
+}
+
+.order-list {
+  display: grid;
+  gap: 16px;
+}
+
+/* each order card */
+.order-card {
+  padding: 14px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
+  border: 1px solid rgba(15, 23, 32, 0.04);
+}
+
+/* header row: order id + status + date */
+.order-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.order-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* status badge */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+.status-paid {
+  background: #16a34a;
+}
+.status-pending {
+  background: #475569;
+}
+.status-failed {
+  background: #dc2626;
+}
+
+/* total */
+.order-total {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+/* JSON payload block */
+.payload-block {
+  margin-top: 12px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 32, 0.04);
+  font-size: 13px;
+  overflow-x: auto;
+}
+
+/* empty state */
+.empty-state {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(15, 23, 32, 0.06);
+  text-align: center;
+  color: #6b7280;
+}
+
+/* utility for paid_by cell */
+.paid-by {
+  font-weight: 700;
+  color: #374151;
+}
+
+/* responsive tweaks */
+@media (max-width: 880px) {
+  .order-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

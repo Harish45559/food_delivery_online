@@ -1,0 +1,45 @@
+/* landing.css — black & white stylish hero with green CTA */
+
+.hero {
+  display:grid;
+  grid-template-columns: 1fr 480px;
+  gap:36px;
+  align-items:center;
+  min-height:78vh;
+  padding:48px;
+  background: linear-gradient(180deg,#fff,#fafafa);
+}
+
+.hero-left { max-width:680px; padding-left:12px; }
+
+.brand { color:#0b0b0b; font-weight:800; font-size:28px; margin-bottom:10px; }
+
+.headline {
+  font-size:44px;
+  color:#0b0b0b;
+  line-height:1.02;
+  margin-bottom:14px;
+}
+
+.sub { color:var(--muted); margin-bottom:22px; }
+
+.cta-row { display:flex; gap:12px; }
+
+.btn-primary { background: linear-gradient(180deg,var(--accent),#008f4f); color:#fff; border-radius:12px; padding:12px 18px; font-weight:800; }
+.btn-outline { background:#fff; color:#0b0b0b; border:1px solid rgba(11,11,11,0.06); padding:12px 18px; border-radius:12px; }
+
+.hero-right { display:flex; align-items:center; justify-content:center; }
+.hero-image {
+  width:100%;
+  max-width:460px;
+  border-radius:16px;
+  box-shadow: 0 30px 60px rgba(2,6,23,0.12);
+  filter: saturate(0.85) contrast(1.02);
+}
+
+/* mobile */
+@media (max-width:900px){
+  .hero { grid-template-columns: 1fr; padding:28px; }
+  .hero-right { order:-1; margin-bottom:16px; }
+  .headline { font-size:28px; }
+}
