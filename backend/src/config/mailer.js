@@ -1,22 +1,39 @@
-// nodemailer Gmail STARTTLS transporter
-const nodemailer = require('nodemailer');
+// backend/src/config/mailer.js
+require("dotenv").config();
+const nodemailer = require("nodemailer");
+
+const {
+  MAIL_HOST,
+  MAIL_PORT,
+  MAIL_USERNAME,
+  MAIL_PASSWORD,
+  MAIL_FROM_ADDRESS,
+  MAIL_FROM_NAME,
+  MAIL_ENCRYPTION
+} = process.env;
+
+if (!MAIL_HOST || !MAIL_PORT || !MAIL_USERNAME || !MAIL_PASSWORD || !MAIL_FROM_ADDRESS) {
+  console.log("❌ Mailer disabled — missing SMTP environment variables.");
+  module.exports = null;
+  return;
+}
 
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST || 'smtp.gmail.com',
-  port: Number(process.env.MAIL_PORT || 587),
-  secure: false, // use STARTTLS
+  host: MAIL_HOST,
+  port: Number(MAIL_PORT),
+  secure: MAIL_ENCRYPTION === "ssl",
   auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD // use App Password (16 chars)
+    user: MAIL_USERNAME,
+    pass: MAIL_PASSWORD
   },
-  requireTLS: true,
-  connectionTimeout: 20000, // 20s
-  greetingTimeout: 20000
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
-// optional: verbose verify & logs
-transporter.verify()
-  .then(() => console.log('Mailer: SMTP connection & auth successful'))
-  .catch(err => {
-    console.error('Mailer verify failed:', err);
-  });
+transporter.verify((err) => {
+  if (err) console.log("❌ Mailer verify failed:", err.message || err);
+  else console.log("✅ SMTP Mailer ready");
+});
+
+module.exports = transporter;
