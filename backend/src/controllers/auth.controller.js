@@ -4,19 +4,29 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-// import mailer (support both shapes: { sendMail } or transporterPromise/transporter)
+// import mailer module (we expect it to export sendMail function)
+// The mailer we provided exports: { transporter, sendMail }
 const mailerModule = require('../config/mailer');
 
-// helper to send mail whether mailer exports sendMail or transporterPromise
-async function sendMailSafe(mailOptions) {
-  if (typeof mailerModule.sendMail === 'function') {
+// Helper to send mail using the mailer module in a safe way
+async function sendMailSafe(mailOptions = {}) {
+  // Ensure `from` is present — MailerSend requires it.
+  if (!mailOptions.from) {
+    mailOptions.from = {
+      name: process.env.MAIL_FROM_NAME || 'No Reply',
+      address: process.env.MAIL_FROM_ADDRESS
+    };
+  }
+
+  // prefer mailerModule.sendMail if available
+  if (mailerModule && typeof mailerModule.sendMail === 'function') {
     return mailerModule.sendMail(mailOptions);
   }
-  // fallback: transporterPromise -> transporter.sendMail
-  if (mailerModule.transporterPromise) {
-    const transporter = await mailerModule.transporterPromise;
-    const info = await transporter.sendMail(mailOptions);
-    // attach preview url if ethereal
+
+  // fallback: transporter object
+  if (mailerModule && mailerModule.transporter && typeof mailerModule.transporter.sendMail === 'function') {
+    const info = await mailerModule.transporter.sendMail(mailOptions);
+    // attach preview url if ethereal (optional)
     try {
       const nodemailer = require('nodemailer');
       const preview = nodemailer.getTestMessageUrl(info);
@@ -24,6 +34,7 @@ async function sendMailSafe(mailOptions) {
     } catch (e) { /* ignore */ }
     return info;
   }
+
   throw new Error('No mailer available');
 }
 
@@ -62,7 +73,7 @@ async function register(req, res) {
       if (err && err.code === '23505') {
         return res.status(400).json({ message: 'Email already registered' });
       }
-      console.error('register - db error', err);
+      console.error('register - db error', err && err.stack ? err.stack : err);
       throw err;
     }
 
@@ -74,9 +85,12 @@ async function register(req, res) {
 
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify?email=${encodeURIComponent(email)}`;
 
-    // email the OTP
+    // email the OTP — ensure from uses MAIL_FROM_ADDRESS
     const mailOptions = {
-      from: process.env.FROM_EMAIL,
+      from: {
+        name: process.env.MAIL_FROM_NAME || 'No Reply',
+        address: process.env.MAIL_FROM_ADDRESS
+      },
       to: email,
       subject: 'Verify your account - OTP',
       text: `Your verification code is ${otp}. It expires in ${OTP_EXP_MIN} minutes.`,
@@ -151,13 +165,21 @@ async function login(req, res) {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
 
-const token = jwt.sign(
-  { sub: user.id, email: user.email, role: user.role },
-  process.env.JWT_SECRET,
-  { expiresIn: process.env.JWT_EXPIRES_IN }
-);
+    const token = jwt.sign(
+      { sub: user.id, email: user.email, role: user.role || 'user' },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.namerole, role: user.role } });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name || null,
+        role: user.role || 'user'
+      }
+    });
   } catch (err) {
     console.error('login error', err && err.stack ? err.stack : err);
     res.status(500).json({ message: 'Server error' });
@@ -165,9 +187,8 @@ const token = jwt.sign(
 }
 
 /**
- * FORGOT/RESET functions (kept from previous implementation)
+ * FORGOT/RESET functions
  */
-// forgotPassword & resetPassword kept as-is in your existing file
 async function forgotPassword(req, res) {
   try {
     const { email } = req.body;
@@ -183,11 +204,14 @@ async function forgotPassword(req, res) {
 
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset?token=${token}&email=${encodeURIComponent(user.email)}`;
     const mailOptions = {
-      from: process.env.FROM_EMAIL,
+      from: {
+        name: process.env.MAIL_FROM_NAME || 'No Reply',
+        address: process.env.MAIL_FROM_ADDRESS
+      },
       to: user.email,
       subject: 'Password reset link',
-      text: `Click the link to reset your password (valid for 15 minutes): ${resetUrl}`,
-      html: `<p>Click the link to reset your password (valid for 15 minutes):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`
+      text: `Click the link to reset your password (valid for ${Number(process.env.RESET_EXP_MINUTES) || 15} minutes): ${resetUrl}`,
+      html: `<p>Click the link to reset your password (valid for ${Number(process.env.RESET_EXP_MINUTES) || 15} minutes):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`
     };
 
     try {
