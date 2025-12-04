@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import "../styles/MasterData.css";
+import "../styles/Masterdata.css";
 
 /* ---------------------------------------------------
     IMAGE MATCHING – NO SLUG NEEDED
