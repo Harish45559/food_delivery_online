@@ -19,7 +19,7 @@ import AdminRoute from "./routes/AdminRoute";
 
 import { AuthProvider } from "./contexts/AuthContext";
 
-import "./styles/theme.css";
+import "../styles/theme.css";
 
 // Menu pages
 import MenuPage from "./pages/Menu";
