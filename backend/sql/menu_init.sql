@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
   available BOOLEAN DEFAULT TRUE,
   image_url VARCHAR(1024),
   created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
+  updated_at TIMESTAMP DEFAULT now(),
   price_gbp Numeric
 );
 
