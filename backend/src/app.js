@@ -31,7 +31,7 @@ const corsOptions = frontendOrigin
 
 app.use(cors(corsOptions));
 
-app.use(express.static(frontendPath));  
+
 
 
 // ✅ VERY IMPORTANT: mount webhook BEFORE express.json()
