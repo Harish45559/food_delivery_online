@@ -67,7 +67,7 @@ async function runSqlFile(client, filePath) {
         reset_token VARCHAR(255),
         reset_expires_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT now(),
-        updated_at TIMESTAMP DEFAULT now()
+        updated_at TIMESTAMP DEFAULT now(),
         mobile VARCHAR(40),
         dob DATE,
         addressline1 VARCHAR(255),
