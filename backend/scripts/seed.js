@@ -68,6 +68,15 @@ async function runSqlFile(client, filePath) {
         reset_expires_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT now(),
         updated_at TIMESTAMP DEFAULT now()
+        mobile VARCHAR(40),
+        dob DATE,
+        addressline1 VARCHAR(255),
+        addressline2 VARCHAR(255),
+        city VARCHAR(120),
+        county VARCHAR(120),
+        postcode VARCHAR(32),
+        country VARCHAR(64),
+
       );
       `,
       "users table"
