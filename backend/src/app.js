@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const bodyParser = require("body-parser");
 
 const authRoutes = require("./routes/auth.routes");
@@ -17,66 +18,100 @@ const addressesRoutes = require("./routes/addresses.routes");
 
 const app = express();
 
-/**
- * CORS config:
- * - If FRONTEND_URL is set in env (recommended), allow only that origin.
- * - Otherwise allow any origin (useful for quick testing; tighten for production).
- */
-const frontendOrigin = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || process.env.VITE_API_URL;
-const corsOptions = frontendOrigin
-  ? { origin: frontendOrigin, credentials: true }
-  : { origin: true, credentials: true }; // echo origin, allow credentials
+/* -----------------------------------------------------------
+   CORS: support comma-separated FRONTEND_URLS or single FRONTEND_URL
+------------------------------------------------------------ */
+const allowedListRaw =
+  (process.env.FRONTEND_URLS && process.env.FRONTEND_URLS.trim()) ||
+  process.env.FRONTEND_URL ||
+  process.env.VITE_FRONTEND_URL ||
+  "http://localhost:5173";
 
-app.use(cors(corsOptions));
+const allowedList = allowedListRaw
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
-// ✅ VERY IMPORTANT: mount webhook BEFORE express.json()
-// Webhooks (Stripe etc.) need raw body to validate signatures.
+console.log("CORS Whitelist:", allowedList);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (curl/postman/server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedList.includes(origin)) return callback(null, true);
+      console.warn("CORS blocked origin:", origin);
+      return callback(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+  })
+);
+
+/* -----------------------------------------------------------
+   Webhook (must be BEFORE express.json() and BEFORE static fallback)
+   Example: Stripe webhook needs raw body to validate signatures.
+------------------------------------------------------------ */
 app.use("/webhook", bodyParser.raw({ type: "application/json" }), webhookRoute);
 
-// ❗ Now it's safe to enable express.json()
+/* -----------------------------------------------------------
+   Normal JSON parser for API routes (after webhook)
+------------------------------------------------------------ */
 app.use(express.json());
 
-// health
-app.get("/", (req, res) => res.json({ ok: true }));
+/* -----------------------------------------------------------
+   Health check
+------------------------------------------------------------ */
+app.get("/health", (req, res) => res.json({ ok: true }));
 
-/**
- * Mount routes on BOTH the /api/... namespace AND the short form /... namespace.
- * This provides backward compatibility for clients that use /auth/login instead of /api/auth/login.
- * Example: both POST /auth/login and POST /api/auth/login will be handled by authRoutes.
- */
+/* -----------------------------------------------------------
+   API ROUTES
+   Mount routes under both /api/... and short /... for compatibility
+------------------------------------------------------------ */
+app.use(["/api/auth", "/auth"], authRoutes);
+app.use(["/api/auth", "/auth"], userRoutes);
 
-app.use(['/api/auth', '/auth'], authRoutes);
-app.use(['/api/auth', '/auth'], userRoutes);
+app.use(["/api/protected", "/protected"], protectedRoutes);
 
-app.use(['/api/protected', '/protected'], protectedRoutes);
+app.use(["/api/menu", "/menu"], menuRoutes);
 
-app.use(['/api/menu', '/menu'], menuRoutes);
+app.use(["/api/payments", "/payments"], paymentRoutes);
 
-app.use(['/api/payments', '/payments'], paymentRoutes);
+app.use(["/api/orders", "/orders"], ordersRoutes);
+app.use(["/api/orders", "/orders"], ordersListRoutes);
 
-app.use(['/api/orders', '/orders'], ordersRoutes);
+app.use(["/api/live-orders", "/live-orders"], liveordersRoutes);
 
-// orders-list (admin/reporting) — mounted under the same base so /api/orders/list and /orders/list work
-app.use(['/api/orders', '/orders'], ordersListRoutes);
+app.use(["/api/addresses", "/addresses"], addressesRoutes);
 
-// live orders SSE
-app.use(['/api/live-orders', '/live-orders'], liveordersRoutes);
+/* -----------------------------------------------------------
+   Serve frontend static files (if built) + SPA fallback
+   This must come AFTER API routes so /api/* is handled by Express routes.
+------------------------------------------------------------ */
+const frontendDist = path.join(__dirname, "..", "frontend", "dist");
+if (fs.existsSync(frontendDist)) {
+  console.log("Serving frontend from", frontendDist);
+  app.use(express.static(frontendDist));
 
-// addresses
-app.use(['/api/addresses', '/addresses'], addressesRoutes);
+  // For any other GET request not handled above, serve index.html
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+} else {
+  console.log("No frontend build found at", frontendDist, "- skipping static serve");
+}
 
-// serve uploads if needed (optional — your server.js already mounts /uploads after listen in many setups)
-// Uncomment if you want app to serve uploads directly:
-// app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
-
-// error handler
+/* -----------------------------------------------------------
+   GLOBAL ERROR HANDLER
+------------------------------------------------------------ */
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err && err.stack ? err.stack : err);
-  return res
-    .status(err.status || 500)
-    .json({ message: err.message || "Server error" });
+  // If CORS rejected origin, express-cors will call next(err) with message; preserve status 403 for that case
+  if (err && err.message && err.message.includes("CORS")) {
+    return res.status(403).json({ message: "CORS error: origin not allowed" });
+  }
+  res.status(err.status || 500).json({ message: err.message || "Server error" });
 });
 
 module.exports = app;
-
-
