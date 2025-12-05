@@ -5,6 +5,7 @@ const pool = db.pool;
 
 /**
  * List addresses for a user
+ * @param {number} userId
  */
 exports.listAddressesByUser = async function (userId) {
   const q = `SELECT id, user_id, address, label, name, phone, is_default, created_at
@@ -24,7 +25,6 @@ exports.countAddresses = async function (userId) {
 
 /**
  * Unset the is_default flag for all addresses for a user.
- * Used when creating/updating an address that should become default.
  */
 exports.unsetDefaultForUser = async function (userId) {
   const q = `UPDATE user_addresses SET is_default = false WHERE user_id = $1 AND is_default = true`;
@@ -33,8 +33,7 @@ exports.unsetDefaultForUser = async function (userId) {
 };
 
 /**
- * Create address
- * payload: { user_id, address, label, name, phone, is_default }
+ * Create address (payload: { user_id, address, label, name, phone, is_default })
  */
 exports.createAddress = async function (payload) {
   const {
@@ -47,7 +46,6 @@ exports.createAddress = async function (payload) {
   } = payload;
 
   if (is_default) {
-    // unset other defaults
     await exports.unsetDefaultForUser(user_id);
   }
 
@@ -62,43 +60,54 @@ exports.createAddress = async function (payload) {
 };
 
 /**
- * Delete address by id and user
+ * Export addAddress alias for callers expecting addAddress(...)
  */
-exports.deleteAddress = async function (userId, addressId) {
+exports.addAddress = exports.createAddress;
+
+/**
+ * Delete address by id and user (controller calls deleteAddress(id, userId))
+ * Returns deleted row or undefined.
+ */
+exports.deleteAddress = async function (id, userId) {
   const q = `DELETE FROM user_addresses WHERE id = $1 AND user_id = $2 RETURNING *`;
-  const { rows } = await pool.query(q, [addressId, userId]);
+  const { rows } = await pool.query(q, [id, userId]);
   return rows[0];
 };
 
 /**
- * Update address (partial update)
- * updates: object with any of address,label,name,phone,is_default
+ * Update address — accepts single-object signature used by controller:
+ * updateAddress({ id, user_id, address, label, name, phone, is_default })
+ * Returns updated row.
  */
-exports.updateAddress = async function (userId, addressId, updates = {}) {
+exports.updateAddress = async function (opts = {}) {
+  const { id, user_id } = opts;
+  if (!id || !user_id) return null;
+
+  // If setting is_default true, unset others first
+  if (Object.prototype.hasOwnProperty.call(opts, 'is_default') && opts.is_default === true) {
+    await exports.unsetDefaultForUser(user_id);
+  }
+
   const fields = [];
   const values = [];
   let idx = 1;
 
-  // If is_default is being set true, unset others first
-  if (Object.prototype.hasOwnProperty.call(updates, 'is_default') && updates.is_default === true) {
-    await exports.unsetDefaultForUser(userId);
-  }
-
   for (const key of ['address', 'label', 'name', 'phone', 'is_default']) {
-    if (Object.prototype.hasOwnProperty.call(updates, key)) {
+    if (Object.prototype.hasOwnProperty.call(opts, key)) {
       fields.push(`${key} = $${idx}`);
-      values.push(updates[key]);
+      values.push(opts[key]);
       idx++;
     }
   }
 
   if (fields.length === 0) {
-    // Nothing to update
-    const { rows } = await pool.query(`SELECT * FROM user_addresses WHERE id=$1 AND user_id=$2`, [addressId, userId]);
+    // nothing to update — return current row
+    const { rows } = await pool.query(`SELECT * FROM user_addresses WHERE id=$1 AND user_id=$2`, [id, user_id]);
     return rows[0] || null;
   }
 
-  values.push(addressId, userId); // last two params
+  // add id and user_id as last params
+  values.push(id, user_id);
   const q = `UPDATE user_addresses SET ${fields.join(', ')}, created_at = created_at WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`;
   const { rows } = await pool.query(q, values);
   return rows[0];
