@@ -1,13 +1,10 @@
 // backend/src/utils/addresses.db.js
-// Use the shared DB pool (from src/db) so SSL and connection settings are consistent.
-
-const db = require('../db'); // reuse the central pool
+// Shared DB pool usage so SSL and connection options are consistent.
+const db = require('../db');
 const pool = db.pool;
 
 /**
  * List addresses for a user
- * @param {number} userId
- * @returns {Promise<Array>}
  */
 exports.listAddressesByUser = async function (userId) {
   const q = `SELECT id, user_id, address, label, name, phone, is_default, created_at
@@ -17,9 +14,7 @@ exports.listAddressesByUser = async function (userId) {
 };
 
 /**
- * Count addresses for a user (used to limit number of addresses)
- * @param {number} userId
- * @returns {Promise<number>}
+ * Count addresses for a user
  */
 exports.countAddresses = async function (userId) {
   const q = `SELECT COUNT(*)::int AS cnt FROM user_addresses WHERE user_id = $1`;
@@ -28,9 +23,18 @@ exports.countAddresses = async function (userId) {
 };
 
 /**
+ * Unset the is_default flag for all addresses for a user.
+ * Used when creating/updating an address that should become default.
+ */
+exports.unsetDefaultForUser = async function (userId) {
+  const q = `UPDATE user_addresses SET is_default = false WHERE user_id = $1 AND is_default = true`;
+  await pool.query(q, [userId]);
+  return true;
+};
+
+/**
  * Create address
- * @param {object} payload - { user_id, address, label, name, phone, is_default }
- * @returns {Promise<object>} inserted row
+ * payload: { user_id, address, label, name, phone, is_default }
  */
 exports.createAddress = async function (payload) {
   const {
@@ -41,6 +45,11 @@ exports.createAddress = async function (payload) {
     phone = null,
     is_default = false
   } = payload;
+
+  if (is_default) {
+    // unset other defaults
+    await exports.unsetDefaultForUser(user_id);
+  }
 
   const q = `
     INSERT INTO user_addresses (user_id, address, label, name, phone, is_default, created_at)
@@ -53,7 +62,7 @@ exports.createAddress = async function (payload) {
 };
 
 /**
- * Delete address (by id + user)
+ * Delete address by id and user
  */
 exports.deleteAddress = async function (userId, addressId) {
   const q = `DELETE FROM user_addresses WHERE id = $1 AND user_id = $2 RETURNING *`;
@@ -62,12 +71,18 @@ exports.deleteAddress = async function (userId, addressId) {
 };
 
 /**
- * Update address
+ * Update address (partial update)
+ * updates: object with any of address,label,name,phone,is_default
  */
 exports.updateAddress = async function (userId, addressId, updates = {}) {
   const fields = [];
   const values = [];
   let idx = 1;
+
+  // If is_default is being set true, unset others first
+  if (Object.prototype.hasOwnProperty.call(updates, 'is_default') && updates.is_default === true) {
+    await exports.unsetDefaultForUser(userId);
+  }
 
   for (const key of ['address', 'label', 'name', 'phone', 'is_default']) {
     if (Object.prototype.hasOwnProperty.call(updates, key)) {
@@ -77,7 +92,11 @@ exports.updateAddress = async function (userId, addressId, updates = {}) {
     }
   }
 
-  if (fields.length === 0) return null;
+  if (fields.length === 0) {
+    // Nothing to update
+    const { rows } = await pool.query(`SELECT * FROM user_addresses WHERE id=$1 AND user_id=$2`, [addressId, userId]);
+    return rows[0] || null;
+  }
 
   values.push(addressId, userId); // last two params
   const q = `UPDATE user_addresses SET ${fields.join(', ')}, created_at = created_at WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`;
