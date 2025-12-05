@@ -1,8 +1,9 @@
+
+
 // backend/src/app.js
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require("fs");
 const bodyParser = require("body-parser");
 
 const authRoutes = require("./routes/auth.routes");
@@ -18,84 +19,69 @@ const addressesRoutes = require("./routes/addresses.routes");
 
 const app = express();
 
-/* -----------------------------------------------------------
-   CORS: support comma-separated FRONTEND_URLS or single FRONTEND_URL
------------------------------------------------------------- */
-const allowedListRaw =
-  (process.env.FRONTEND_URLS && process.env.FRONTEND_URLS.trim()) ||
-  process.env.FRONTEND_URL ||
-  process.env.VITE_FRONTEND_URL ||
-  "http://localhost:5173";
+/**
+ * CORS config:
+ * - If FRONTEND_URL is set in env (recommended), allow only that origin.
+ * - Otherwise allow any origin (useful for quick testing; tighten for production).
+ */
+const frontendOrigin = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || process.env.VITE_API_URL;
+const corsOptions = frontendOrigin
+  ? { origin: frontendOrigin, credentials: true }
+  : { origin: true, credentials: true }; // echo origin, allow credentials
 
-const allowedList = allowedListRaw
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+app.use(cors(corsOptions));
 
-console.log("CORS Whitelist:", allowedList);
+app.use(express.static(frontendPath));  
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (curl/postman/server-to-server)
-      if (!origin) return callback(null, true);
-      if (allowedList.includes(origin)) return callback(null, true);
-      console.warn("CORS blocked origin:", origin);
-      return callback(null, false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
-  })
-);
 
-/* -----------------------------------------------------------
-   Webhook (must be BEFORE express.json() and BEFORE static fallback)
-   Example: Stripe webhook needs raw body to validate signatures.
------------------------------------------------------------- */
+// ✅ VERY IMPORTANT: mount webhook BEFORE express.json()
+// Webhooks (Stripe etc.) need raw body to validate signatures.
 app.use("/webhook", bodyParser.raw({ type: "application/json" }), webhookRoute);
 
-/* -----------------------------------------------------------
-   Normal JSON parser for API routes (after webhook)
------------------------------------------------------------- */
+// ❗ Now it's safe to enable express.json()
 app.use(express.json());
 
-/* -----------------------------------------------------------
-   Health check
------------------------------------------------------------- */
-app.get("/health", (req, res) => res.json({ ok: true }));
+// health
+app.get("/", (req, res) => res.json({ ok: true }));
 
-/* -----------------------------------------------------------
-   API ROUTES
-   Mount routes under both /api/... and short /... for compatibility
------------------------------------------------------------- */
-app.use(["/api/auth", "/auth"], authRoutes);
-app.use(["/api/auth", "/auth"], userRoutes);
+/**
+ * Mount routes on BOTH the /api/... namespace AND the short form /... namespace.
+ * This provides backward compatibility for clients that use /auth/login instead of /api/auth/login.
+ * Example: both POST /auth/login and POST /api/auth/login will be handled by authRoutes.
+ */
 
-app.use(["/api/protected", "/protected"], protectedRoutes);
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/auth', '/auth'], userRoutes);
 
-app.use(["/api/menu", "/menu"], menuRoutes);
+app.use(['/api/protected', '/protected'], protectedRoutes);
 
-app.use(["/api/payments", "/payments"], paymentRoutes);
+app.use(['/api/menu', '/menu'], menuRoutes);
 
-app.use(["/api/orders", "/orders"], ordersRoutes);
-app.use(["/api/orders", "/orders"], ordersListRoutes);
+app.use(['/api/payments', '/payments'], paymentRoutes);
 
-app.use(["/api/live-orders", "/live-orders"], liveordersRoutes);
+app.use(['/api/orders', '/orders'], ordersRoutes);
 
-app.use(["/api/addresses", "/addresses"], addressesRoutes);
+// orders-list (admin/reporting) — mounted under the same base so /api/orders/list and /orders/list work
+app.use(['/api/orders', '/orders'], ordersListRoutes);
 
+// live orders SSE
+app.use(['/api/live-orders', '/live-orders'], liveordersRoutes);
 
-/* -----------------------------------------------------------
-   GLOBAL ERROR HANDLER
------------------------------------------------------------- */
+// addresses
+app.use(['/api/addresses', '/addresses'], addressesRoutes);
+
+// serve uploads if needed (optional — your server.js already mounts /uploads after listen in many setups)
+// Uncomment if you want app to serve uploads directly:
+// app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+
+// error handler
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err && err.stack ? err.stack : err);
-  // If CORS rejected origin, express-cors will call next(err) with message; preserve status 403 for that case
-  if (err && err.message && err.message.includes("CORS")) {
-    return res.status(403).json({ message: "CORS error: origin not allowed" });
-  }
-  res.status(err.status || 500).json({ message: err.message || "Server error" });
+  return res
+    .status(err.status || 500)
+    .json({ message: err.message || "Server error" });
 });
 
 module.exports = app;
+
+
