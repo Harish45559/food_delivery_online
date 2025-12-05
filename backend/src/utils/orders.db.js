@@ -1,42 +1,41 @@
 // backend/src/utils/orders.db.js
-require("dotenv").config();
-const { Pool } = require("pg");
+// Reuse the shared DB pool (backend/src/db) so SSL / connection options are consistent.
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const db = require('../db'); // shared pool
+const pool = db.pool;
 
 /* ----------------------------------------------------
    CREATE TABLE IF NOT EXISTS orders
-   (keeps it minimal and syntactically-safe)
 ---------------------------------------------------- */
-pool
-  .query(
-    `
-    CREATE TABLE IF NOT EXISTS orders (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER,
-      stripe_pid TEXT UNIQUE,
-      status TEXT,
-      total_gbp NUMERIC,
-      notes TEXT,
-      payload JSONB,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      customer_name VARCHAR(255),
-      customer_phone VARCHAR(50),
-      customer_address TEXT,
-      paid_by TEXT,
-      delivery_type VARCHAR(20)
-    );
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        stripe_pid TEXT UNIQUE,
+        status TEXT,
+        total_gbp NUMERIC,
+        notes TEXT,
+        payload JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        customer_name VARCHAR(255),
+        customer_phone VARCHAR(50),
+        customer_address TEXT,
+        paid_by TEXT,
+        delivery_type VARCHAR(20)
+      );
+    `);
 
-    CREATE INDEX IF NOT EXISTS idx_orders_pid ON orders(stripe_pid);
-    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-    CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
-  `
-  )
-  .catch((err) => {
-    console.error("Error creating orders table:", err);
-  });
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_pid ON orders(stripe_pid);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);`);
+
+    console.log('✔ orders table exists / ensured');
+  } catch (err) {
+    console.error('Error creating orders table:', err && err.message ? err.message : err);
+  }
+})();
 
 /* ----------------------------------------------------
    ADD ORDER
@@ -48,12 +47,11 @@ exports.addOrder = async ({
   total_gbp,
   payload,
   notes = null,
-
   customer_name = null,
   customer_phone = null,
   customer_address = null,
   paid_by = null,
-  delivery_type = null,
+  delivery_type = null
 }) => {
   const result = await pool.query(
     `
@@ -74,14 +72,14 @@ exports.addOrder = async ({
       customer_phone,
       customer_address,
       paid_by,
-      delivery_type,
+      delivery_type
     ]
   );
   return result.rows[0];
 };
 
 /* ----------------------------------------------------
-   UPDATE / SELECT / LIST helpers — include delivery_type
+   UPDATE / SELECT / LIST helpers
 ---------------------------------------------------- */
 
 exports.updateOrderStatusByPid = async (pid, status) => {
@@ -190,7 +188,7 @@ exports.listKitchenOrders = async () => {
     WHERE LOWER(status) = ANY($1)
     ORDER BY created_at DESC
   `,
-    [["paid", "preparing", "prepared"]]
+    [['paid', 'preparing', 'prepared']]
   );
   return result.rows;
 };
