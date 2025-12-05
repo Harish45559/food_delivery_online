@@ -4,10 +4,11 @@
 const db = require('../db'); // shared pool
 const pool = db.pool;
 
-/* ----------------------------------------------------
-   CREATE TABLE IF NOT EXISTS orders
----------------------------------------------------- */
-(async () => {
+/**
+ * Ensure the orders table exists and indexes are present.
+ * Call this function manually when you want to run migrations.
+ */
+async function ensureOrders() {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
@@ -31,15 +32,26 @@ const pool = db.pool;
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);`);
 
-    console.log('✔ orders table exists / ensured');
+    console.log('✔ orders table ensured');
   } catch (err) {
-    console.error('Error creating orders table:', err && err.message ? err.message : err);
+    console.error('Error ensuring orders table:', err && err.message ? err.message : err);
+    throw err;
   }
-})();
+}
+
+// Optionally run automatically only when explicitly allowed via env var.
+// For normal deployments (no env var), this file will not create tables on require().
+if (process.env.RUN_MIGRATIONS === 'true') {
+  ensureOrders().catch((err) => {
+    console.error('Failed to run ensureOrders():', err && err.message ? err.message : err);
+  });
+}
 
 /* ----------------------------------------------------
    ADD ORDER
 ---------------------------------------------------- */
+exports.ensureOrders = ensureOrders;
+
 exports.addOrder = async ({
   user_id,
   stripe_pid = null,

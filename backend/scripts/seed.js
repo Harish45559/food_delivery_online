@@ -2,6 +2,13 @@
 // Robust DB initializer: creates core tables + runs SQL from backend/sql/ (including menu_init.sql)
 
 require("dotenv").config();
+
+// Guard: don't run automatic seeding in production unless RUN_SEED=true
+if (process.env.NODE_ENV === 'production' && process.env.RUN_SEED !== 'true') {
+  console.log('Skipping seed in production (set RUN_SEED=true to force).');
+  process.exit(0);
+}
+
 const fs = require("fs");
 const path = require("path");
 const db = require("../src/db"); // reuse shared SSL-enabled pool
