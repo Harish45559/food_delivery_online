@@ -17,66 +17,75 @@ const addressesRoutes = require("./routes/addresses.routes");
 
 const app = express();
 
-/**
- * CORS config:
- * - If FRONTEND_URL is set in env (recommended), allow only that origin.
- * - Otherwise allow any origin (useful for quick testing; tighten for production).
- */
-const frontendOrigin = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || process.env.VITE_API_URL;
-const corsOptions = frontendOrigin
-  ? { origin: frontendOrigin, credentials: true }
-  : { origin: true, credentials: true }; // echo origin, allow credentials
+/* -----------------------------------------------------------
+   CORS CONFIG — Works for both LOCAL & PRODUCTION
+------------------------------------------------------------ */
 
-app.use(cors(corsOptions));
+const FRONTEND =
+  process.env.FRONTEND_URL ||     // for Render
+  process.env.VITE_FRONTEND_URL || // for Vite env
+  "http://localhost:5173";         // fallback for local
 
-// ✅ VERY IMPORTANT: mount webhook BEFORE express.json()
-// Webhooks (Stripe etc.) need raw body to validate signatures.
+console.log("CORS Allowed Origin:", FRONTEND);
+
+app.use(
+  cors({
+    origin: FRONTEND,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
+
+/* -----------------------------------------------------------
+   IMPORTANT: Webhook must receive RAW body (Stripe, etc.)
+------------------------------------------------------------ */
 app.use("/webhook", bodyParser.raw({ type: "application/json" }), webhookRoute);
 
-// ❗ Now it's safe to enable express.json()
+/* -----------------------------------------------------------
+   Normal JSON body parser after webhook
+------------------------------------------------------------ */
 app.use(express.json());
 
-// health
+/* -----------------------------------------------------------
+   Health check
+------------------------------------------------------------ */
 app.get("/", (req, res) => res.json({ ok: true }));
 
-/**
- * Mount routes on BOTH the /api/... namespace AND the short form /... namespace.
- * This provides backward compatibility for clients that use /auth/login instead of /api/auth/login.
- * Example: both POST /auth/login and POST /api/auth/login will be handled by authRoutes.
- */
+/* -----------------------------------------------------------
+   API ROUTES — Production-safe
+   Only expose `/api/...` versions to avoid confusion.
+------------------------------------------------------------ */
 
-app.use(['/api/auth', '/auth'], authRoutes);
-app.use(['/api/auth', '/auth'], userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/auth", userRoutes);
 
-app.use(['/api/protected', '/protected'], protectedRoutes);
+app.use("/api/protected", protectedRoutes);
 
-app.use(['/api/menu', '/menu'], menuRoutes);
+app.use("/api/menu", menuRoutes);
 
-app.use(['/api/payments', '/payments'], paymentRoutes);
+app.use("/api/payments", paymentRoutes);
 
-app.use(['/api/orders', '/orders'], ordersRoutes);
+app.use("/api/orders", ordersRoutes);
+app.use("/api/orders", ordersListRoutes);
 
-// orders-list (admin/reporting) — mounted under the same base so /api/orders/list and /orders/list work
-app.use(['/api/orders', '/orders'], ordersListRoutes);
+app.use("/api/live-orders", liveordersRoutes);
 
-// live orders SSE
-app.use(['/api/live-orders', '/live-orders'], liveordersRoutes);
+app.use("/api/addresses", addressesRoutes);
 
-// addresses
-app.use(['/api/addresses', '/addresses'], addressesRoutes);
-
-// serve uploads if needed (optional — your server.js already mounts /uploads after listen in many setups)
-// Uncomment if you want app to serve uploads directly:
+/* -----------------------------------------------------------
+   Serve uploaded images (optional)
+------------------------------------------------------------ */
 // app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// error handler
+/* -----------------------------------------------------------
+   GLOBAL ERROR HANDLER
+------------------------------------------------------------ */
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err && err.stack ? err.stack : err);
-  return res
-    .status(err.status || 500)
-    .json({ message: err.message || "Server error" });
+  console.error("Unhandled Error:", err);
+  res.status(err.status || 500).json({
+    message: err.message || "Server error"
+  });
 });
 
 module.exports = app;
-
-
