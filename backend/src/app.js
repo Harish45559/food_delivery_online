@@ -18,32 +18,46 @@ const addressesRoutes = require("./routes/addresses.routes");
 const app = express();
 
 /* -----------------------------------------------------------
-   CORS CONFIG — Works for both LOCAL & PRODUCTION
+   CORS CONFIG — Supports multiple origins (local + production)
 ------------------------------------------------------------ */
 
-const FRONTEND =
-  process.env.FRONTEND_URL ||     // for Render
-  process.env.VITE_FRONTEND_URL || // for Vite env
-  "http://localhost:5173";         // fallback for local
+// Read multiple allowed origins from env:
+// Example: FRONTEND_URLS="http://localhost:5173,https://food-delivery-online-1.onrender.com"
+const allowedListRaw =
+  process.env.FRONTEND_URLS ||
+  process.env.FRONTEND_URL ||
+  process.env.VITE_FRONTEND_URL ||
+  "http://localhost:5173"; // fallback for local
 
-console.log("CORS Allowed Origin:", FRONTEND);
+const allowedList = allowedListRaw
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+console.log("CORS Whitelist:", allowedList);
 
 app.use(
   cors({
-    origin: FRONTEND,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow curl/postman
+      if (allowedList.includes(origin)) return callback(null, true);
+
+      console.warn("CORS blocked origin:", origin);
+      return callback(null, false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 /* -----------------------------------------------------------
-   IMPORTANT: Webhook must receive RAW body (Stripe, etc.)
+   Webhook must receive RAW body (Stripe)
 ------------------------------------------------------------ */
 app.use("/webhook", bodyParser.raw({ type: "application/json" }), webhookRoute);
 
 /* -----------------------------------------------------------
-   Normal JSON body parser after webhook
+   JSON Parser (after webhook)
 ------------------------------------------------------------ */
 app.use(express.json());
 
@@ -53,10 +67,8 @@ app.use(express.json());
 app.get("/", (req, res) => res.json({ ok: true }));
 
 /* -----------------------------------------------------------
-   API ROUTES — Production-safe
-   Only expose `/api/...` versions to avoid confusion.
+   API ROUTES
 ------------------------------------------------------------ */
-
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", userRoutes);
 
@@ -74,17 +86,12 @@ app.use("/api/live-orders", liveordersRoutes);
 app.use("/api/addresses", addressesRoutes);
 
 /* -----------------------------------------------------------
-   Serve uploaded images (optional)
------------------------------------------------------------- */
-// app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
-
-/* -----------------------------------------------------------
    GLOBAL ERROR HANDLER
 ------------------------------------------------------------ */
 app.use((err, req, res, next) => {
   console.error("Unhandled Error:", err);
   res.status(err.status || 500).json({
-    message: err.message || "Server error"
+    message: err.message || "Server error",
   });
 });
 
