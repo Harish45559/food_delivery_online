@@ -60,6 +60,7 @@ async function runSqlFile(client, filePath) {
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         name VARCHAR(255),
+        role VARCHAR(50) DEFAULT 'user',
         is_active BOOLEAN DEFAULT true,
         otp_code VARCHAR(10),
         otp_expires_at TIMESTAMP,
