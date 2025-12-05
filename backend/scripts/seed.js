@@ -52,22 +52,18 @@ async function runSqlFile(client, filePath) {
     //
     // 1️⃣ USERS TABLE
     //
-    await runSql(
-      client,
-      `
+    await runSql(client, `
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
+        name VARCHAR(255),
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(255),
         role VARCHAR(50) DEFAULT 'user',
-        is_active BOOLEAN DEFAULT true,
+        is_active BOOLEAN DEFAULT false,
         otp_code VARCHAR(10),
         otp_expires_at TIMESTAMP,
         reset_token VARCHAR(255),
         reset_expires_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT now(),
-        updated_at TIMESTAMP DEFAULT now(),
         mobile VARCHAR(40),
         dob DATE,
         addressline1 VARCHAR(255),
@@ -76,36 +72,10 @@ async function runSqlFile(client, filePath) {
         county VARCHAR(120),
         postcode VARCHAR(32),
         country VARCHAR(64),
-
+        created_at TIMESTAMP DEFAULT now(),
+        updated_at TIMESTAMP DEFAULT now()
       );
-      `,
-      "users table"
-    );
-
-    //
-    // 2️⃣ ORDERS TABLE
-    //
-    await runSql(
-      client,
-      `
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER,
-        stripe_pid TEXT UNIQUE,
-        status TEXT,
-        total_gbp NUMERIC,
-        notes TEXT,
-        payload JSONB,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        customer_name VARCHAR(255),
-        customer_phone VARCHAR(50),
-        customer_address TEXT,
-        paid_by TEXT,
-        delivery_type VARCHAR(20)
-      );
-    `,
-      "orders table"
-    );
+    `, "users table");
 
     //
     // 3️⃣ USER ADDRESSES TABLE
