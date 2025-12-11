@@ -285,27 +285,56 @@ export default function CheckoutForm({ onPaymentSuccess }) {
       className="checkout-form"
       style={{ maxWidth: 720 }}
     >
-      <h3 style={{ marginBottom: 10 }}>Order Type</h3>
+      <h3 style={{ marginBottom: 10, fontSize: 20, fontWeight: "bold" }}>
+        Order Type
+      </h3>
 
-      <div style={{ marginBottom: 20 }}>
-        <label>
+      <div
+        style={{
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 40, // spacing between options
+        }}
+      >
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 18,
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
           <input
             type="radio"
             name="deliveryType"
             value="delivery"
             checked={deliveryType === "delivery"}
             onChange={() => setDeliveryType("delivery")}
+            style={{ width: 20, height: 20 }} // bigger radio
           />
           Delivery
         </label>
 
-        <label style={{ marginLeft: 20 }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 18,
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
           <input
             type="radio"
             name="deliveryType"
             value="pickup"
             checked={deliveryType === "pickup"}
             onChange={() => setDeliveryType("pickup")}
+            style={{ width: 20, height: 20 }} // bigger radio
           />
           Pick-Up
         </label>
@@ -314,31 +343,48 @@ export default function CheckoutForm({ onPaymentSuccess }) {
       {/* show delivery details only when delivery is selected */}
       {deliveryType === "delivery" && (
         <>
-          <h3 style={{ marginBottom: 10 }}>Delivery details</h3>
-
+          <h3
+            style={{
+              marginBottom: 12,
+              fontSize: 20,
+              fontWeight: "bold",
+              color: "#111827",
+            }}
+          >
+            Delivery details
+          </h3>
           {/* saved addresses dropdown */}
           {savedAddresses && savedAddresses.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 14 }}>
               <label
-                style={{ display: "block", marginBottom: 6, color: "#374151" }}
+                style={{
+                  display: "block",
+                  marginBottom: 6,
+                  color: "#1f2937",
+                  fontWeight: "600", // slightly bold
+                  fontSize: 16,
+                }}
               >
                 Saved addresses
               </label>
+
               <select
                 value={selectedAddressId || ""}
                 onChange={(e) => {
                   const val = e.target.value;
                   setSelectedAddressId(val || null);
+
                   if (!val) {
-                    // clear selection — do not clear user inputs
-                    // setName(""); setPhone(""); setAddress("");
+                    // selection cleared
                   }
                 }}
                 style={{
                   width: "100%",
-                  padding: 8,
+                  padding: "10px",
+                  fontSize: 16,
+                  fontWeight: "500", // thicker select text
                   borderRadius: 6,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #d1d5db",
                 }}
               >
                 <option value="">— select saved address —</option>
@@ -348,13 +394,15 @@ export default function CheckoutForm({ onPaymentSuccess }) {
                   </option>
                 ))}
               </select>
-              <div style={{ marginTop: 6 }}>
-                <a href="/app/address" className="btn btn-ghost">
-                  Manage addresses
-                </a>
-              </div>
             </div>
           )}
+          {/* 
+                <div style={{ marginTop: 6 }}>
+                  <a href="/app/address" className="btn btn-ghost">
+                    Manage addresses
+                  </a>
+                </div>
+                */}
 
           <div style={{ display: "grid", gap: 8, marginBottom: 8 }}>
             <input
