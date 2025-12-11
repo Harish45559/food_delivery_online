@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/forgot.css";
 import "../styles/auth-background.css";
+import api from "../services/api";
 import heroBg from "../assets/landing-food.jpg";
 
 export default function ForgotPassword() {
