@@ -202,7 +202,7 @@ async function forgotPassword(req, res) {
     const expiresAt = new Date(Date.now() + (Number(process.env.RESET_EXP_MINUTES) || 15) * 60 * 1000);
     await db.query('UPDATE users SET reset_token=$1, reset_expires_at=$2 WHERE id=$3', [token, expiresAt, user.id]);
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset?token=${token}&email=${encodeURIComponent(user.email)}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://food-delivery-online-1.onrender.com'}/reset?token=${token}&email=${encodeURIComponent(user.email)}`;
     const mailOptions = {
       from: {
         name: process.env.MAIL_FROM_NAME || 'No Reply',
