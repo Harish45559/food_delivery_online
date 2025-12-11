@@ -3,7 +3,7 @@ import "../styles/forgot.css";
 import "../styles/auth-background.css";
 import api from "../services/api";
 import heroBg from "../assets/landing-food.jpg";
-import api from "../services/api";
+
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
