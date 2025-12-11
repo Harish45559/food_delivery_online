@@ -1,45 +1,136 @@
-/* landing.css — black & white stylish hero with green CTA */
-
-.hero {
-  display:grid;
-  grid-template-columns: 1fr 480px;
-  gap:36px;
-  align-items:center;
-  min-height:78vh;
-  padding:48px;
-  background: linear-gradient(180deg,#fff,#fafafa);
+/* container */
+.landing-root {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  padding: 60px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
-.hero-left { max-width:680px; padding-left:12px; }
+/* background image layer
+   - covers the entire right portion visually (but is full width for smooth cover)
+   - background-position set to center right so the subject stays on the right
+*/
+.landing-bg {
+  position: absolute;
+  inset: 0;                 /* top:0; right:0; bottom:0; left:0; */
+  z-index: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center right;
+  transform: scale(1.03);
+  filter: saturate(0.98) brightness(.7) contrast(1);
+}
 
-.brand { color:#0b0b0b; font-weight:800; font-size:28px; margin-bottom:10px; }
+/* soft fade overlay placed above the image but below text.
+   This creates a smooth left-to-right fade from white -> transparent, avoiding any hard seam.
+*/
+.landing-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* gradient: left side white-ish to the image on the right */
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,1) 0%,
+    rgba(255,255,255,0.95) 20%,
+    rgba(255,255,255,0.65) 35%,
+    rgba(255,255,255,0.35) 50%,
+    rgba(255,255,255,0.12) 65%,
+    rgba(255,255,255,0) 82%,
+    rgba(255,255,255,0) 100%
+  );
+  pointer-events: none;
+  z-index: 1; /* sits on top of the image but under content */
+}
+
+/* content (text/buttons) sits above everything */
+.landing-content {
+  position: relative;
+  z-index: 2;
+  max-width: 520px;
+}
+
+/* typography */
+.brand {
+  font-family: "Playfair Display", serif;   /* Elegant & premium */
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  color: #0c0c0c;
+}
+
 
 .headline {
-  font-size:44px;
-  color:#0b0b0b;
-  line-height:1.02;
-  margin-bottom:14px;
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  color: #0b0b0b;
 }
 
-.sub { color:var(--muted); margin-bottom:22px; }
-
-.cta-row { display:flex; gap:12px; }
-
-.btn-primary { background: linear-gradient(180deg,var(--accent),#008f4f); color:#fff; border-radius:12px; padding:12px 18px; font-weight:800; }
-.btn-outline { background:#fff; color:#0b0b0b; border:1px solid rgba(11,11,11,0.06); padding:12px 18px; border-radius:12px; }
-
-.hero-right { display:flex; align-items:center; justify-content:center; }
-.hero-image {
-  width:100%;
-  max-width:460px;
-  border-radius:16px;
-  box-shadow: 0 30px 60px rgba(2,6,23,0.12);
-  filter: saturate(0.85) contrast(1.02);
+.sub {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 26px;
 }
 
-/* mobile */
-@media (max-width:900px){
-  .hero { grid-template-columns: 1fr; padding:28px; }
-  .hero-right { order:-1; margin-bottom:16px; }
-  .headline { font-size:28px; }
+/* CTA */
+.cta-row {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #13b676, #0b8b53);
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px 22px;
+  border: none;
+  font-weight: 700;
+}
+
+.btn-outline {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 22px;
+  border: 1px solid #e6e6e6;
+  font-weight: 700;
+}
+
+/* responsive: on smaller screens we let the image still sit behind but reduce brightness so text reads well */
+@media (max-width: 900px) {
+  .landing-root {
+    padding: 28px;
+  }
+
+  .landing-bg {
+    background-position: center;
+    filter: saturate(0.95) brightness(.55);
+  }
+
+  .landing-bg::after {
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.9) 0%,
+      rgba(255,255,255,0.85) 20%,
+      rgba(255,255,255,0.6) 40%,
+      rgba(255,255,255,0.2) 65%,
+      rgba(255,255,255,0) 100%
+    );
+  }
+
+  .headline {
+    font-size: 32px;
+    text-align: center;
+  }
+
+  .landing-content {
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }
 }

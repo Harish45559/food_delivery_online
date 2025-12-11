@@ -1,6 +1,7 @@
-// frontend/src/pages/Login.jsx
 import React, { useState, useContext } from "react";
 import "../styles/login.css";
+import "../styles/auth-background.css";
+import heroBg from "../assets/landing-food.jpg";
 import api from "../services/api";
 import { AuthContext } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -17,67 +18,65 @@ export default function Login() {
     e.preventDefault();
     setErr(null);
 
-    if (!email || !password) {
-      setErr("Please enter email & password");
-      return;
-    }
+    if (!email || !password) return setErr("Please enter email & password");
 
     setLoading(true);
     try {
       const res = await api.post("/auth/login", { email, password });
       const data = res.data || {};
-      // Defensive checks
-      if (!data.token) {
-        setErr("Login failed: no token received from server");
-        setLoading(false);
-        return;
-      }
-      // prefer server user, fallback to email-only object
+
+      if (!data.token) return setErr("Login failed: no token received");
+
       const userObj = data.user || { email };
 
-      // Save token & user in context + localStorage
       login(data.token, userObj);
-
-      // Navigate to app dashboard
       nav("/app/dashboard");
     } catch (e) {
-      const msg = e?.response?.data?.message || e.message || "Login failed";
-      setErr(msg);
+      setErr(e?.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="auth-container">
-      <h2 className="auth-title">Welcome back</h2>
-      <p className="auth-sub">Sign in to continue ordering</p>
+    <div className="auth-bg-root">
+      <div
+        className="auth-bg"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      />
 
-      <form onSubmit={handleSubmit} className="form-row">
-        <input
-          className="input"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+      <div className="auth-bg-content">
+        <div className="auth-container">
+          <h2 className="auth-title">Welcome back</h2>
+          <p className="auth-sub">Sign in to continue ordering</p>
 
-        <input
-          className="input"
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <form onSubmit={handleSubmit} className="form-row">
+            <input
+              className="input"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-        {err && <p className="error">{err}</p>}
+            <input
+              className="input"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-        <button className="primary-cta" type="submit" disabled={loading}>
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+            {err && <p className="error">{err}</p>}
 
-      <div className="secondary-link">
-        <a href="/forgot">Forgot password?</a>
+            <button className="primary-cta" type="submit">
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+
+          <div className="secondary-link">
+            <a href="/forgot">Forgot password?</a>
+          </div>
+        </div>
       </div>
     </div>
   );

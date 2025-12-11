@@ -20,17 +20,41 @@ import MenuItemCard from "../components/MenuItemCard";
  */
 
 /* ---------------- Inline Cart ---------------- */
-function InlineCart({ items }) {
+  function InlineCart({ items }) {
   const navigate = useNavigate();
+
+  // Always convert stored cart into an array
+  function normalizeCart(raw) {
+    if (!raw) return [];
+
+    if (Array.isArray(raw)) return raw;
+
+    if (typeof raw === "string") {
+      try {
+        return normalizeCart(JSON.parse(raw));
+      } catch {
+        return [];
+      }
+    }
+
+    if (typeof raw === "object") {
+      if (Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw.cart)) return raw.cart;
+    }
+
+    return [];
+  }
 
   // initial cart read from localStorage
   const [cart, setCart] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("cart") || "[]");
-    } catch {
-      return [];
-    }
-  });
+  try {
+    const raw = localStorage.getItem("cart");
+    return normalizeCart(raw);
+  } catch {
+    return [];
+  }
+});
+
 
   // notes state (stored separately so we don't change cart shape)
   const [notes, setNotes] = useState(() => {
@@ -45,7 +69,8 @@ function InlineCart({ items }) {
   useEffect(() => {
     function onUpdate() {
       try {
-        setCart(JSON.parse(localStorage.getItem("cart") || "[]"));
+        setCart(normalizeCart(localStorage.getItem("cart")));
+
       } catch {
         setCart([]);
       }
