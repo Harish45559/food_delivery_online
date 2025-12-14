@@ -1,4 +1,3 @@
-// client/src/services/api.js
 import axios from "axios";
 
 /**
@@ -47,6 +46,17 @@ api.fetchOrderByPid = async (pid) => {
 // Update status
 api.updateOrderStatus = async (id, status) => {
   const res = await api.patch(`/orders/${id}`, { status });
+  return res.data;
+};
+
+/* ---------------------------------------
+   ETA adjustment helper (new)
+   POST /orders/:id/adjust_eta  { delta_minutes: -5|+5|... }
+   Server should persist estimated_ready_at and broadcast SSE order_updated.
+---------------------------------------- */
+
+api.adjustOrderEta = async (orderId, payload) => {
+  const res = await api.post(`/orders/${orderId}/adjust_eta`, payload);
   return res.data;
 };
 

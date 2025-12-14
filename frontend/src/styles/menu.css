@@ -1,7 +1,7 @@
 /* menu.css — with dropdown animation and auto-hide arrows */
 
 /* container basics */
-.menu-page { padding: 18px 0; }
+.menu-page { padding: 18px 0; width: 95%; }
 .menu-grid { display: flex; gap: 18px; align-items: flex-start; }
 .menu-left { flex: 1; min-width: 0; }
 
@@ -22,6 +22,7 @@
   gap: 8px;
   margin-bottom: 14px;
   position: relative;
+  right: 5%;
 }
 
 /* arrow buttons */
@@ -175,7 +176,7 @@
 .add-btn { background: #00A663; color: #fff; padding: 6px 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 800; font-size: 13px; }
 
 /* cart */
-.cart-card { width: 100%; padding: 12px; border-radius: 12px; background: #fff; box-shadow: 0 10px 30px rgba(2,6,23,0.06); }
+.cart-card { width: 90%; padding: 12px; border-radius: 12px; background: #fff; box-shadow: 0 10px 30px rgba(2,6,23,0.06); }
 .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #f0f0f0; }
 .cart-item-title { font-weight: 700; }
 .cart-controls { display: flex; align-items: center; gap: 8px; }

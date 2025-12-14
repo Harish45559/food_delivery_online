@@ -43,9 +43,9 @@ export default function Sidebar() {
           Profile
         </NavLink>
 
-        <NavLink to="/app/address" className="nav-link">
+        {/*<NavLink to="/app/address" className="nav-link">
           Delivery Address
-        </NavLink>
+        </NavLink>*/}
 
         {/* ADMIN ONLY */}
         {user?.role === "admin" && (

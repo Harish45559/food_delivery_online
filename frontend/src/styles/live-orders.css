@@ -1,6 +1,5 @@
 /* client/src/styles/live-orders.css
    Clean, compact layout for Live Orders — FINAL
-   Replace the entire file with this content.
 */
 
 :root {
@@ -39,6 +38,7 @@ body {
   align-items: center;
   margin-bottom: 12px;
 }
+
 .page-header h2 {
   margin: 0;
   font-size: 20px;
@@ -65,7 +65,8 @@ body {
   max-width: var(--card-max-width);
   width: 100%;
   box-sizing: border-box;
-  min-height: 260px; /* keeps cards visually stable */
+  min-height: 260px;
+  /* keeps cards visually stable */
   position: relative;
   overflow: hidden;
 }
@@ -91,11 +92,13 @@ body {
   gap: 6px;
   min-width: 0;
 }
+
 .live-order-id {
   font-weight: 900;
   font-size: 17px;
   line-height: 1;
 }
+
 .live-ts {
   color: var(--muted);
   font-size: 13px;
@@ -120,14 +123,17 @@ body {
   flex-direction: column;
   gap: 4px;
 }
+
 .cust-name {
   font-weight: 700;
   font-size: 14px;
 }
+
 .cust-phone {
   color: var(--muted);
   font-size: 13px;
 }
+
 .cust-address {
   font-size: 13px;
   color: #374151;
@@ -175,19 +181,24 @@ body {
   font-size: 13px;
   text-transform: capitalize;
 }
+
 .live-paid {
   background: var(--success);
 }
+
 .live-preparing {
   background: var(--warn);
   color: #111;
 }
+
 .live-prepared {
   background: var(--accent);
 }
+
 .live-cancelled {
   background: var(--danger);
 }
+
 .live-pending {
   background: #475569;
 }
@@ -204,10 +215,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 260px; /* prevents oversized card */
+  max-height: 260px;
+  /* prevents oversized card */
   overflow: auto;
-  padding-right: 6px; /* room for scrollbar */
+  padding-right: 6px;
+  /* room for scrollbar */
 }
+
 .live-item {
   display: flex;
   justify-content: space-between;
@@ -217,20 +231,24 @@ body {
   border-radius: 10px;
   border: 1px solid rgba(2, 6, 23, 0.03);
 }
+
 .item-left {
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
 }
+
 .item-title {
   font-weight: 700;
   overflow-wrap: anywhere;
 }
+
 .item-sub {
   color: var(--muted);
   font-size: 13px;
 }
+
 .item-right {
   font-weight: 800;
 }
@@ -243,6 +261,7 @@ body {
   border-radius: 8px;
   border: 1px solid rgba(2, 6, 23, 0.02);
 }
+
 .notes-text {
   color: var(--muted);
   font-size: 13px;
@@ -257,6 +276,7 @@ body {
   margin-top: 4px;
   flex-wrap: wrap;
 }
+
 .elapsed {
   margin-left: auto;
   color: var(--muted);
@@ -273,21 +293,47 @@ body {
   background: #fff;
   box-shadow: 0 6px 18px rgba(2, 6, 23, 0.03);
 }
+
 .btn-accept {
   background: var(--success);
   color: #fff;
 }
+
 .btn-primary {
   background: var(--accent);
   color: #fff;
 }
+
 .btn-reject {
   background: var(--danger);
   color: #fff;
 }
+
 .btn.small {
   padding: 6px 8px;
   font-size: 13px;
+}
+
+/* ETA specific styling (use .live-eta classes instead of inline style) */
+.live-eta {
+  margin-left: 12px;
+  font-weight: 700;
+  color: #065f46;
+  /* default green-ish */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-eta.warn {
+  color: #92400e;
+  /* amber / darker for warning */
+}
+
+.live-eta.due {
+  color: #b91c1c;
+  /* red for overdue */
+  text-decoration: underline;
 }
 
 /* small screens: stack nicely */
@@ -296,11 +342,13 @@ body {
     max-width: 100%;
     min-height: 220px;
   }
+
   .live-order-head {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
+
   .live-order-right {
     align-self: flex-end;
     flex-direction: column;

@@ -68,8 +68,91 @@ function useElapsedTimer(startIso) {
   return hh > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+/* -------------------- remaining countdown hook -------------------- */
+/**
+ * useRemainingTime(targetIso)
+ * - targetIso: Date | ISO string | number
+ * Returns { mins: number, mmss: "MM:SS", done: boolean }
+ */
+function useRemainingTime(targetIso) {
+  const parseTarget = () => {
+    if (!targetIso) return null;
+    const t = typeof targetIso === "string" ? new Date(targetIso) : targetIso;
+    if (t instanceof Date && !isNaN(t.getTime())) return t;
+    return null;
+  };
+
+  const [remainingMs, setRemainingMs] = useState(() => {
+    const t = parseTarget();
+    return t ? Math.max(0, t.getTime() - Date.now()) : 0;
+  });
+
+  useEffect(() => {
+    const t = parseTarget();
+    if (!t) {
+      setRemainingMs(0);
+      return;
+    }
+    const id = setInterval(() => {
+      const rem = Math.max(0, t.getTime() - Date.now());
+      setRemainingMs(rem);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [targetIso]);
+
+  const secs = Math.max(0, Math.floor(remainingMs / 1000));
+  const mm = Math.floor(secs / 60).toString();
+  const ss = Math.floor(secs % 60)
+    .toString()
+    .padStart(2, "0");
+  const mins = Math.max(0, Math.round(secs / 60));
+  const mmss = `${mm}:${ss}`;
+  return { mins, mmss, done: remainingMs <= 0 };
+}
+
+/* -------------------- ETA estimate helper (frontend fallback) -------------------- */
+const DEFAULT_PER_ITEM_MIN = 8; // fallback per-item minutes
+const DEFAULT_BASE_MIN = 5; // base kitchen time
+
+function estimateReadyAtForOrder(order) {
+  // prefer explicit server-provided timestamp
+  if (order.estimated_ready_at) {
+    const t = new Date(order.estimated_ready_at);
+    if (!isNaN(t.getTime())) return t;
+  }
+
+  // prefer estimated_prep_minutes if present
+  if (
+    order.estimated_prep_minutes &&
+    Number.isFinite(Number(order.estimated_prep_minutes))
+  ) {
+    const mins = Number(order.estimated_prep_minutes);
+    return new Date(new Date(order.created_at).getTime() + mins * 60000);
+  }
+
+  // otherwise compute from items
+  const items =
+    Array.isArray(order.payload?.items) && order.payload.items.length
+      ? order.payload.items
+      : Array.isArray(order.items) && order.items.length
+      ? order.items
+      : [];
+
+  const itemCount = items.reduce((s, it) => s + (it.qty || 1), 0);
+  const mins = DEFAULT_BASE_MIN + DEFAULT_PER_ITEM_MIN * itemCount;
+  return new Date(new Date(order.created_at).getTime() + mins * 60000);
+}
+
 /* -------------------- OrderCard (UI) -------------------- */
-function OrderCard({ order, onAccept, onMarkPrepared, onComplete, onReject }) {
+/* Added 'onAdjustEta' prop to receive adjustments from parent */
+function OrderCard({
+  order,
+  onAccept,
+  onMarkPrepared,
+  onComplete,
+  onReject,
+  onAdjustEta,
+}) {
   const timer = useElapsedTimer(order.created_at);
   const status = normalizeStatus(order.status);
   const isNew = order.acknowledged === false && status === "paid";
@@ -99,6 +182,11 @@ function OrderCard({ order, onAccept, onMarkPrepared, onComplete, onReject }) {
     (customerAddress && String(customerAddress).trim() !== ""
       ? "delivery"
       : "pickup");
+
+  // Compute ETA & remaining
+  const estimatedReadyAt = estimateReadyAtForOrder(order);
+  const remaining = useRemainingTime(estimatedReadyAt);
+  // remaining.mins = integer minutes left, remaining.mmss = "M:SS"
 
   return (
     <div className={`live-order-card ${isNew ? "new-order" : ""}`}>
@@ -238,6 +326,37 @@ function OrderCard({ order, onAccept, onMarkPrepared, onComplete, onReject }) {
             Mark Complete
           </button>
         )}
+
+        {/* ETA adjust controls: -5 / +5 minutes (calls parent via onAdjustEta) */}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <button
+            className="btn small"
+            title="Subtract 5 minutes"
+            onClick={() =>
+              typeof onAdjustEta === "function" && onAdjustEta(order.id, -5)
+            }
+          >
+            −5m
+          </button>
+          <button
+            className="btn small"
+            title="Add 5 minutes"
+            onClick={() =>
+              typeof onAdjustEta === "function" && onAdjustEta(order.id, +5)
+            }
+          >
+            +5m
+          </button>
+        </div>
+
+        <div
+          className={`live-eta ${
+            remaining.done ? "due" : remaining.mins <= 3 ? "warn" : ""
+          }`}
+        >
+          ETA: {remaining.mins} min{" "}
+          {remaining.done ? "(due)" : `(${remaining.mmss})`}
+        </div>
 
         <div className="elapsed">⏱ {timer}</div>
       </div>
@@ -435,6 +554,17 @@ export default function LiveOrders() {
           });
           return;
         }
+
+        if (data.event === "order_eta_updated") {
+          setOrders((prev) =>
+            prev.map((o) =>
+              String(o.id) === String(data.orderId)
+                ? { ...o, estimated_ready_at: data.estimated_ready_at }
+                : o
+            )
+          );
+          return;
+        }
       } catch (e) {
         console.error("SSE handler error", e);
       }
@@ -524,6 +654,32 @@ export default function LiveOrders() {
     }
   };
 
+  /* NEW: optimistic ETA adjust handler (calls API) */
+  const adjustOrderEta = async (orderId, deltaMinutes) => {
+    // optimistic UI update
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (Number(o.id) !== Number(orderId)) return o;
+        // compute previous estimated ready (fallback to estimator)
+        const prevEst = o.estimated_ready_at
+          ? new Date(o.estimated_ready_at)
+          : estimateReadyAtForOrder(o);
+        const newEst = new Date(prevEst.getTime() + deltaMinutes * 60000);
+        return { ...o, estimated_ready_at: newEst.toISOString() };
+      })
+    );
+
+    try {
+      // call API (server should persist and broadcast order_updated)
+      await api.adjustOrderEta(orderId, { delta_minutes: deltaMinutes });
+      // success: server SSE should update others; keep optimistic state
+    } catch (err) {
+      console.error("adjust ETA failed", err);
+      // revert by reloading authoritative data
+      await reloadList();
+    }
+  };
+
   const reloadList = async () => {
     try {
       const r = await api.get("/live-orders/list");
@@ -570,6 +726,7 @@ export default function LiveOrders() {
             onMarkPrepared={markPrepared}
             onComplete={completeOrder}
             onReject={rejectOrder}
+            onAdjustEta={adjustOrderEta} /* new prop */
           />
         ))}
       </div>
