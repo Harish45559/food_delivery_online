@@ -1,10 +1,12 @@
-// backend/src/controllers/orders.controller.js
-
 const {
   listAllOrders,
   listOrdersByUser,
   getOrderByPid,
+  getOrderById,
+  updateOrderEtaById,
 } = require("../utils/orders.db");
+
+const { broadcastSse } = require("../utils/sse");
 
 /**
  * Helper: normalize an order row so that:
@@ -135,5 +137,50 @@ exports.getOrderByPid = async (req, res) => {
   } catch (err) {
     console.error("getOrderByPid error:", err);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.adjustOrderEta = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { delta_minutes } = req.body;
+
+    if (!Number.isFinite(Number(delta_minutes))) {
+      return res.status(400).json({ message: "delta_minutes is required" });
+    }
+
+    const order = await getOrderById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // base ETA (safe)
+    let baseTime;
+    if (order.estimated_ready_at) {
+      const t = new Date(order.estimated_ready_at);
+      baseTime = isNaN(t.getTime()) ? new Date(order.created_at) : t;
+    } else {
+      baseTime = new Date(order.created_at);
+    }
+
+    const newEta = new Date(baseTime.getTime() + Number(delta_minutes) * 60000);
+
+    const updated = await updateOrderEtaById(order.id, newEta);
+
+    // 🔔 SSE broadcast
+    broadcastSse({
+      event: "order_eta_updated",
+      orderId: order.id,
+      estimated_ready_at: updated.estimated_ready_at,
+    });
+
+    return res.json({
+      success: true,
+      orderId: order.id,
+      estimated_ready_at: updated.estimated_ready_at,
+    });
+  } catch (err) {
+    console.error("adjustOrderEta error:", err);
+    return res.status(500).json({ message: "Failed to adjust ETA" });
   }
 };

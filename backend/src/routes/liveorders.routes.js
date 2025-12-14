@@ -1,15 +1,14 @@
-// backend/src/routes/liveorders.routes.js
 const express = require("express");
 const router = express.Router();
-const {
-  sseHandler,
-  listKitchen,
-} = require("../controllers/liveorders.controller");
+const { addClient } = require("../utils/sse");
+const { listKitchen } = require("../controllers/liveorders.controller");
 
-// SSE stream (GET /api/live-orders/)
-router.get("/", sseHandler);
+// ✅ SINGLE SSE SYSTEM
+router.get("/", (req, res) => {
+  addClient(res);
+});
 
-// Kitchen current queue (GET /api/live-orders/list)
+// Kitchen current queue
 router.get("/list", listKitchen);
 
 module.exports = router;

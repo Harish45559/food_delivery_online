@@ -4,8 +4,8 @@
 require("dotenv").config();
 
 // Guard: don't run automatic seeding in production unless RUN_SEED=true
-if (process.env.NODE_ENV === 'production' && process.env.RUN_SEED !== 'true') {
-  console.log('Skipping seed in production (set RUN_SEED=true to force).');
+if (process.env.NODE_ENV === "production" && process.env.RUN_SEED !== "true") {
+  console.log("Skipping seed in production (set RUN_SEED=true to force).");
   process.exit(0);
 }
 
@@ -39,8 +39,8 @@ async function runSqlFile(client, filePath) {
   // Split into statements safely by semicolon
   const statements = content
     .split(";")
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 
   for (let i = 0; i < statements.length; i++) {
     const stmt = statements[i] + ";";
@@ -59,7 +59,9 @@ async function runSqlFile(client, filePath) {
     //
     // 1️⃣ USERS TABLE
     //
-    await runSql(client, `
+    await runSql(
+      client,
+      `
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255),
@@ -80,9 +82,12 @@ async function runSqlFile(client, filePath) {
         postcode VARCHAR(32),
         country VARCHAR(64),
         created_at TIMESTAMP DEFAULT now(),
-        updated_at TIMESTAMP DEFAULT now()
+        updated_at TIMESTAMP DEFAULT now(),
+        estimated_ready_at TIMESTAMPTZ
       );
-    `, "users table");
+    `,
+      "users table"
+    );
 
     //
     // 3️⃣ USER ADDRESSES TABLE

@@ -1,7 +1,7 @@
 // backend/src/utils/orders.db.js
 // Reuse the shared DB pool (backend/src/db) so SSL / connection options are consistent.
 
-const db = require('../db'); // shared pool
+const db = require("../db"); // shared pool
 const pool = db.pool;
 
 /**
@@ -20,6 +20,7 @@ async function ensureOrders() {
         notes TEXT,
         payload JSONB,
         created_at TIMESTAMPTZ DEFAULT NOW(),
+        estimated_ready_at TIMESTAMPTZ,
         customer_name VARCHAR(255),
         customer_phone VARCHAR(50),
         customer_address TEXT,
@@ -28,22 +29,39 @@ async function ensureOrders() {
       );
     `);
 
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_pid ON orders(stripe_pid);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);`);
+    await pool.query(
+      `ALTER TABLE orders
+       ADD COLUMN IF NOT EXISTS estimated_ready_at TIMESTAMPTZ`
+    );
 
-    console.log('✔ orders table ensured');
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_orders_pid ON orders(stripe_pid);`
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);`
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);`
+    );
+
+    console.log("✔ orders table ensured");
   } catch (err) {
-    console.error('Error ensuring orders table:', err && err.message ? err.message : err);
+    console.error(
+      "Error ensuring orders table:",
+      err && err.message ? err.message : err
+    );
     throw err;
   }
 }
 
 // Optionally run automatically only when explicitly allowed via env var.
 // For normal deployments (no env var), this file will not create tables on require().
-if (process.env.RUN_MIGRATIONS === 'true') {
+if (process.env.RUN_MIGRATIONS === "true") {
   ensureOrders().catch((err) => {
-    console.error('Failed to run ensureOrders():', err && err.message ? err.message : err);
+    console.error(
+      "Failed to run ensureOrders():",
+      err && err.message ? err.message : err
+    );
   });
 }
 
@@ -63,7 +81,7 @@ exports.addOrder = async ({
   customer_phone = null,
   customer_address = null,
   paid_by = null,
-  delivery_type = null
+  delivery_type = null,
 }) => {
   const result = await pool.query(
     `
@@ -84,7 +102,7 @@ exports.addOrder = async ({
       customer_phone,
       customer_address,
       paid_by,
-      delivery_type
+      delivery_type,
     ]
   );
   return result.rows[0];
@@ -170,6 +188,7 @@ exports.getOrderById = async (id) => {
 exports.listAllOrders = async () => {
   const result = await pool.query(`
     SELECT id, stripe_pid, status, total_gbp, notes, payload, created_at, user_id,
+           estimated_ready_at,
            customer_name, customer_phone, customer_address, paid_by, delivery_type
     FROM orders
     ORDER BY id DESC
@@ -181,6 +200,7 @@ exports.listOrdersByUser = async (userId) => {
   const result = await pool.query(
     `
     SELECT id, stripe_pid, status, total_gbp, notes, payload, created_at, user_id,
+           estimated_ready_at,
            customer_name, customer_phone, customer_address, paid_by, delivery_type
     FROM orders
     WHERE user_id = $1
@@ -195,12 +215,31 @@ exports.listKitchenOrders = async () => {
   const result = await pool.query(
     `
     SELECT id, stripe_pid, status, total_gbp, notes, payload, created_at, user_id,
+           estimated_ready_at,
            customer_name, customer_phone, customer_address, paid_by, delivery_type
     FROM orders
     WHERE LOWER(status) = ANY($1)
     ORDER BY created_at DESC
   `,
-    [['paid', 'preparing', 'prepared']]
+    [["paid", "preparing", "prepared"]]
   );
   return result.rows;
+};
+
+exports.getOrderById = async (id) => {
+  const result = await pool.query(`SELECT * FROM orders WHERE id = $1`, [id]);
+  return result.rows[0];
+};
+
+exports.updateOrderEtaById = async (id, eta) => {
+  const result = await pool.query(
+    `
+    UPDATE orders
+    SET estimated_ready_at = $2
+    WHERE id = $1
+    RETURNING *
+    `,
+    [id, eta]
+  );
+  return result.rows[0];
 };
