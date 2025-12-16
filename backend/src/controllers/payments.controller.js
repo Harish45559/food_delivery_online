@@ -82,7 +82,12 @@ function normalizeIncomingBody(body) {
 
 exports.createPaymentIntent = async (req, res) => {
   try {
-    const { items = [], notes = null, customer = null } = req.body || {};
+    const {
+      items = [],
+      notes = null,
+      customer = null,
+      delivery_type = "pickup",
+    } = req.body || {};
 
     /* ---------------------------------------
        Mandatory backend validation
@@ -172,6 +177,7 @@ exports.createPaymentIntent = async (req, res) => {
       customer_phone: customer.phone.trim(),
       customer_address: customer.address?.trim() || null,
       paid_by: "card",
+      delivery_type,
     });
 
     if (order) broadcastSse({ event: "order_created", order });
@@ -248,11 +254,16 @@ exports.cancelPaymentIntent = async (req, res) => {
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
-  console.log('[webhook] headers:', req.headers['stripe-signature']);
-try {
-  console.log('[webhook] raw body length:', req.body && req.body.length);
-  console.log('[webhook] raw body preview:', req.body ? req.body.toString().slice(0,1000) : '<missing>');
-} catch(e){ console.warn('[webhook] cannot log raw body', e) }
+  console.log("[webhook] headers:", req.headers["stripe-signature"]);
+  try {
+    console.log("[webhook] raw body length:", req.body && req.body.length);
+    console.log(
+      "[webhook] raw body preview:",
+      req.body ? req.body.toString().slice(0, 1000) : "<missing>"
+    );
+  } catch (e) {
+    console.warn("[webhook] cannot log raw body", e);
+  }
 
   let event;
   try {
