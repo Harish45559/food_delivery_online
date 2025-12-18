@@ -105,7 +105,7 @@ app.use(["/api/auth", "/auth"], userRoutes);
 
 app.use(["/api/protected", "/protected"], protectedRoutes);
 
-app.use("/api/menu", menuRoutes);
+app.use(["/api/menu", "/menu"], menuRoutes);
 
 app.use(["/api/payments", "/payments"], paymentRoutes);
 
