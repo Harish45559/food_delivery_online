@@ -17,6 +17,9 @@ const addressesRoutes = require("./routes/addresses.routes");
 
 const app = express();
 
+// 🔥 STATIC FILES (frontend public)
+app.use(express.static(path.join(__dirname, "../../frontend/public")));
+
 /**
  * CORS config:
  * - If FRONTEND_URL is set in env (recommended), allow only that origin.
@@ -41,11 +44,7 @@ app.set("trust proxy", true);
 /* -------------------------------------------------------
    ✅ RAW BODY FOR WEBHOOKS (Stripe etc.)
 ------------------------------------------------------- */
-app.use(
-  "/webhook",
-  bodyParser.raw({ type: "application/json" }),
-  webhookRoute
-);
+app.use("/webhook", bodyParser.raw({ type: "application/json" }), webhookRoute);
 
 /* -------------------------------------------------------
    ❗ Enable express.json() for all standard routes
@@ -58,7 +57,9 @@ app.use(express.json());
 ------------------------------------------------------- */
 app.use((req, res, next) => {
   console.log(
-    `[REQ] ${req.method} ${req.originalUrl} :: content-type=${req.headers["content-type"] || "none"}, content-length=${req.headers["content-length"] || "none"}`
+    `[REQ] ${req.method} ${req.originalUrl} :: content-type=${
+      req.headers["content-type"] || "none"
+    }, content-length=${req.headers["content-length"] || "none"}`
   );
   next();
 });
@@ -104,7 +105,7 @@ app.use(["/api/auth", "/auth"], userRoutes);
 
 app.use(["/api/protected", "/protected"], protectedRoutes);
 
-app.use(["/api/menu", "/menu"], menuRoutes);
+app.use("/api/menu", menuRoutes);
 
 app.use(["/api/payments", "/payments"], paymentRoutes);
 
@@ -132,10 +133,7 @@ app.use((req, res) => {
    GLOBAL ERROR HANDLER
 ------------------------------------------------------- */
 app.use((err, req, res, next) => {
-  console.error(
-    "Unhandled error:",
-    err && err.stack ? err.stack : err
-  );
+  console.error("Unhandled error:", err && err.stack ? err.stack : err);
   return res
     .status(err.status || 500)
     .json({ message: err.message || "Server error" });
