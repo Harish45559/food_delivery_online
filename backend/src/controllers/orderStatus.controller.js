@@ -1,13 +1,11 @@
 // backend/src/controllers/orderStatus.controller.js
-const { updateOrderStatusById, getOrderById } = require("../utils/orders.db");
+const {
+  updateOrderStatusById,
+  getOrderById,
+  updateOrderPaidByPid,
+} = require("../utils/orders.db");
 const { broadcastSse } = require("../utils/sse");
 
-/**
- * PATCH /api/orders/:id
- * Body: { status: "preparing" | "prepared" | "completed" | "delivered" | "paid" }
- *
- * Updates DB, fetches fresh order, broadcasts `order_updated` event and returns { ok: true, order }.
- */
 exports.updateOrderStatus = async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -19,14 +17,8 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     // Validate allowed statuses
-    const allowed = [
-      "paid",
-      "preparing",
-      "prepared",
-      "completed",
-      "delivered",
-      "cancelled",
-    ];
+    const allowed = ["new", "preparing", "prepared", "completed", "cancelled"];
+
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: "invalid status value" });
     }
@@ -69,6 +61,40 @@ exports.updateOrderStatus = async (req, res) => {
       "[orders] updateOrderStatus error:",
       err && err.stack ? err.stack : err
     );
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.markOrderAsPaid = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "Invalid order id" });
+
+    const order = await getOrderById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.paid_at) {
+      return res.status(400).json({ message: "Order already paid" });
+    }
+
+    await updateOrderPaidByById(id, new Date());
+
+    const updatedOrder = await getOrderById(id);
+
+    broadcastSse({
+      event: "order_updated",
+      order: updatedOrder,
+    });
+
+    return res.json({
+      ok: true,
+      message: "Payment completed",
+      order: updatedOrder,
+    });
+  } catch (err) {
+    console.error("[orders] markOrderAsPaid error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };

@@ -22,7 +22,8 @@ exports.listKitchen = async (req, res) => {
   try {
     const rows = await listKitchenOrders();
 
-    const KITCHEN_STATUSES = new Set(["paid", "preparing", "prepared"]);
+    const KITCHEN_STATUSES = new Set(["new", "preparing", "prepared"]);
+
     const filtered = (rows || []).filter((r) => {
       const s = r && r.status ? String(r.status).toLowerCase().trim() : "";
       return KITCHEN_STATUSES.has(s);

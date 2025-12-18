@@ -5,9 +5,11 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const {
   addOrder,
   updateOrderStatusByPid,
+  updateOrderPaidByByPid, // 👈 ADD THIS
   getOrderByPid,
   deleteOrderByPid,
 } = require("../utils/orders.db");
+
 const { broadcastSse } = require("../utils/sse");
 
 const MINIMUM_PENCE = 50;
@@ -86,7 +88,7 @@ exports.createPaymentIntent = async (req, res) => {
       items = [],
       notes = null,
       customer = null,
-      delivery_type = "pickup",
+      delivery_type = "take-away",
     } = req.body || {};
 
     /* ---------------------------------------
@@ -169,14 +171,14 @@ exports.createPaymentIntent = async (req, res) => {
     const order = await addOrder({
       user_id: userId ? Number(userId) : null,
       stripe_pid: paymentIntent.id,
-      status: "pending",
+      status: "new", // ✅ FIX
       total_gbp: totalPence / 100,
       payload: JSON.stringify(payloadToSave),
       notes: notes || null,
       customer_name: customer.name.trim(),
       customer_phone: customer.phone.trim(),
       customer_address: customer.address?.trim() || null,
-      paid_by: "card",
+      paid_by: null, // ✅ FIX (payment not confirmed yet)
       delivery_type,
     });
 
@@ -191,6 +193,7 @@ exports.createPaymentIntent = async (req, res) => {
     return res.json({
       clientSecret: paymentIntent.client_secret,
       stripe_pid: paymentIntent.id,
+      order_uid: order.order_uid,
       order: order || null,
     });
   } catch (err) {
@@ -230,6 +233,7 @@ exports.cancelPaymentIntent = async (req, res) => {
     // Mark order cancelled in DB (we keep a record)
     try {
       await updateOrderStatusByPid(pid, "cancelled");
+      await updateOrderPaidByByPid(pid, null);
       // optionally, you may prefer to delete the order:
       // await deleteOrderByPid(pid);
     } catch (dbErr) {
@@ -282,36 +286,26 @@ exports.handleStripeWebhook = async (req, res) => {
   if (event.type === "payment_intent.succeeded") {
     const pi = event.data.object;
 
-    console.log("💰 PaymentIntent succeeded:", pi.id);
-
     try {
-      const updated = await updateOrderStatusByPid(pi.id, "paid");
-      console.log("📝 Order update result:", updated);
+      // 1️⃣ Order enters kitchen
+      await updateOrderStatusByPid(pi.id, "new");
+
+      // 2️⃣ Mark payment method
+      await updateOrderPaidByByPid(pi.id, "card"); // ✅ THIS LINE
 
       const order = await getOrderByPid(pi.id);
-      console.log("📦 Order after update:", order);
 
+      // normalize payload (keep your existing logic if any)
       try {
-        if (order) {
-          if (typeof order.payload === "string") {
-            order.payload = JSON.parse(order.payload);
-          }
-          if (!order.payload || typeof order.payload !== "object") {
-            order.payload = {};
-          }
-
-          if (order.notes && !order.payload.notes) {
-            order.payload.notes = order.notes;
-          }
+        if (order && typeof order.payload === "string") {
+          order.payload = JSON.parse(order.payload);
         }
-      } catch (e) {
-        console.error("Failed to merge notes into payload:", e);
-      }
+      } catch (e) {}
 
+      // 3️⃣ Notify UI
       broadcastSse({ event: "order_paid", order });
-      console.log("📢 SSE broadcast sent.");
     } catch (err) {
-      console.error("❌ Error updating order DB:", err);
+      console.error("❌ Error updating order after payment:", err);
     }
   }
 
@@ -373,15 +367,15 @@ exports.createCashOrder = async (req, res) => {
 
     const order = await addOrder({
       user_id,
-      stripe_pid: null, // allowed to be null (Option A)
-      status: "paid", // CASH -> mark as paid immediately
+      stripe_pid: null, // cash has no stripe
+      status: "new", // ✅ order just placed
       total_gbp,
       payload: JSON.stringify(payloadToSave),
       notes: notes || null,
       customer_name: customer?.name || null,
       customer_phone: customer?.phone || null,
       customer_address: customer?.address || null,
-      paid_by: "cash",
+      paid_by: null, // ✅ NOT PAID YET
     });
 
     if (order) broadcastSse({ event: "order_created", order });
