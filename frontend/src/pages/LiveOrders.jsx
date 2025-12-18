@@ -25,7 +25,7 @@ function normalizePayload(p) {
   }
   return { items: [] };
 }
-const KITCHEN_STATUSES = ["paid", "preparing", "prepared"];
+const KITCHEN_STATUSES = ["new", "preparing", "prepared"];
 
 /* -------------------- localStorage ack helpers -------------------- */
 const ACK_KEY = "liveorders_acknowledged_ids";
@@ -181,7 +181,7 @@ function OrderCard({
     deliveryTypeRaw ||
     (customerAddress && String(customerAddress).trim() !== ""
       ? "delivery"
-      : "pickup");
+      : "take-away");
 
   // Compute ETA & remaining
   const estimatedReadyAt = estimateReadyAtForOrder(order);
@@ -192,7 +192,10 @@ function OrderCard({
     <div className={`live-order-card ${isNew ? "new-order" : ""}`}>
       <div className="live-order-head">
         <div className="live-order-meta">
-          <div className="live-order-id">Order #{order.id}</div>
+          <div className="live-order-id">
+            Order #{order.order_uid.slice(0, 8)}
+          </div>
+
           <div className="live-ts">
             {new Date(order.created_at).toLocaleString()}
           </div>
@@ -215,11 +218,17 @@ function OrderCard({
         </div>
 
         <div className="live-order-right">
-          {/* PAID BY – top-right, bold badge */}
-          {order.paid_by && (
-            <div className="paid-by-top">
-              PAID BY: {String(order.paid_by).toUpperCase()}
-            </div>
+          {/* PAYMENT BADGE */}
+          {order.status !== "cancelled" && (
+            <>
+              {order.paid_by ? (
+                <div className="paid-by-top">
+                  PAID BY: {String(order.paid_by).toUpperCase()}
+                </div>
+              ) : (
+                <div className="paid-by-top unpaid">PAY AT PICKUP</div>
+              )}
+            </>
           )}
 
           {/* STATUS badge */}
@@ -284,7 +293,7 @@ function OrderCard({
 
       <div className="live-controls">
         {/* Primary actions only — no dropdown */}
-        {status === "paid" && (
+        {status === "new" && (
           <>
             <button
               className="btn btn-accept"
@@ -441,7 +450,7 @@ export default function LiveOrders() {
 
   const anyUnacknowledged = (list) =>
     (list || orders).some(
-      (o) => normalizeStatus(o.status) === "paid" && o.acknowledged === false
+      (o) => normalizeStatus(o.status) === "new" && o.acknowledged === false
     );
 
   /* Load initial list (use api so VITE_API_URL is respected) */
@@ -459,7 +468,7 @@ export default function LiveOrders() {
             ...o,
             status: normalizeStatus(o.status),
             payload: normalizePayload(o.payload),
-            acknowledged: ackSetRef.current.has(String(o.id)),
+            acknowledged: ackSetRef.current.has(String(o.order_uid)),
           }))
           .filter((o) => KITCHEN_STATUSES.includes(o.status));
 
@@ -494,12 +503,14 @@ export default function LiveOrders() {
             ...data.order,
             status: normalizeStatus(data.order.status),
             payload: normalizePayload(data.order.payload),
-            acknowledged: ackSetRef.current.has(String(data.order.id)) || false,
+            acknowledged:
+              ackSetRef.current.has(String(data.order.order_uid)) || false,
           };
           setOrders((prev) => {
             const idx = prev.findIndex(
-              (p) => String(p.id) === String(incoming.id)
+              (p) => String(p.order_uid) === String(data.order.order_uid)
             );
+
             const next =
               idx !== -1
                 ? (() => {
@@ -558,7 +569,7 @@ export default function LiveOrders() {
         if (data.event === "order_eta_updated") {
           setOrders((prev) =>
             prev.map((o) =>
-              String(o.id) === String(data.orderId)
+              String(o.order_uid) === String(data.order_uid)
                 ? { ...o, estimated_ready_at: data.estimated_ready_at }
                 : o
             )
@@ -689,7 +700,7 @@ export default function LiveOrders() {
           ...o,
           status: normalizeStatus(o.status),
           payload: normalizePayload(o.payload),
-          acknowledged: ackSetRef.current.has(String(o.id)),
+          acknowledged: ackSetRef.current.has(String(o.order_uid)),
         }))
         .filter((o) => KITCHEN_STATUSES.includes(o.status));
       keep.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -720,7 +731,7 @@ export default function LiveOrders() {
       <div className="live-list">
         {orders.map((order) => (
           <OrderCard
-            key={order.id}
+            key={order.order_uid}
             order={order}
             onAccept={acceptOrder}
             onMarkPrepared={markPrepared}

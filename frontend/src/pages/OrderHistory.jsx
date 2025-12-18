@@ -1,4 +1,3 @@
-// client/src/pages/OrderHistory.jsx
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import "../styles/order-history.css";
@@ -24,10 +23,10 @@ export default function OrderHistory() {
 
     const unsubscribe = api.liveOrdersStream((data) => {
       try {
-        // when order_updated or order_paid occurs, refresh list
+        // refresh on any order change
         if (
           data &&
-          (data.event === "order_updated" || data.event === "order_paid")
+          ["order_created", "order_updated", "order_paid"].includes(data.event)
         ) {
           loadOrders();
         }
@@ -41,31 +40,61 @@ export default function OrderHistory() {
     };
   }, []);
 
+  const statusStyle = (status) => {
+    switch (status) {
+      case "new":
+        return { background: "#2563eb" }; // blue
+      case "preparing":
+        return { background: "#f59e0b" }; // amber
+      case "prepared":
+        return { background: "#0ea5e9" }; // sky
+      case "completed":
+        return { background: "#16a34a" }; // green
+      case "cancelled":
+        return { background: "#6b7280" }; // gray
+      default:
+        return { background: "#6b7280" };
+    }
+  };
+
+  const renderPaidBy = (o) => {
+    if (o.status === "cancelled") return "—";
+    if (o.paid_by) return `PAID BY ${String(o.paid_by).toUpperCase()}`;
+    return "PAY AT PICKUP";
+  };
+
   return (
     <div style={{ padding: 20, maxWidth: 1100, margin: "0 auto" }}>
       <h2>Order history</h2>
+
       {loading && <div>Loading…</div>}
       {!loading && orders.length === 0 && <div>No orders</div>}
+
       <div style={{ marginTop: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr
               style={{ textAlign: "left", borderBottom: "2px solid #f3f4f6" }}
             >
-              <th style={{ padding: 12, width: 100 }}>Order #</th>
+              <th style={{ padding: 12, width: 140 }}>Order Ref</th>
+
               <th style={{ padding: 12 }}>Items</th>
-              <th style={{ padding: 12, width: 120 }}>Status</th>
+              <th style={{ padding: 12, width: 140 }}>Status</th>
               <th style={{ padding: 12, textAlign: "right", width: 120 }}>
                 Total
               </th>
-              <th style={{ padding: 12, width: 120 }}>Paid by</th>
+              <th style={{ padding: 12, width: 140 }}>Payment</th>
               <th style={{ padding: 12, width: 180 }}>Created</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.id} style={{ borderBottom: "1px solid #f7f7f7" }}>
-                <td style={{ padding: 12 }}>{o.id}</td>
+              <tr key={o.order_uid}>
+                <td style={{ padding: 12, borderBottom: "1px solid #f7f7f7" }}>
+                  {o.order_uid.slice(0, 8)}
+                </td>
+
+                <td style={{ padding: 12 }}>{o.order_uid.slice(0, 8)}</td>
                 <td style={{ padding: 12 }}>
                   {(o.payload?.items || []).map((it, i) => (
                     <div
@@ -93,26 +122,18 @@ export default function OrderHistory() {
                     style={{
                       padding: "6px 10px",
                       borderRadius: 8,
-                      background:
-                        o.status === "paid"
-                          ? "#16a34a"
-                          : o.status === "completed"
-                          ? "#6b7280"
-                          : "#f59e0b",
                       color: "#fff",
                       fontWeight: 700,
+                      ...statusStyle(o.status),
                     }}
                   >
-                    {o.status}
+                    {String(o.status).toUpperCase()}
                   </span>
                 </td>
                 <td style={{ padding: 12, textAlign: "right" }}>
                   £{parseFloat(o.total_gbp || 0).toFixed(2)}
                 </td>
-                <td style={{ padding: 12 }}>
-                  {/* show paid_by (fallback to payload) */}
-                  {o.paid_by || o.payload?.paid_by || "—"}
-                </td>
+                <td style={{ padding: 12 }}>{renderPaidBy(o)}</td>
                 <td style={{ padding: 12 }}>
                   {new Date(o.created_at).toLocaleString()}
                 </td>

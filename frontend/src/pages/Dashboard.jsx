@@ -16,6 +16,16 @@ function formatCurrencyGBP(amount) {
   return `£${amount.toFixed(2)}`;
 }
 
+function shortOrderId(o) {
+  if (o.order_uid && typeof o.order_uid === "string") {
+    return o.order_uid.slice(0, 8);
+  }
+  if (o.id != null) {
+    return String(o.id);
+  }
+  return "—";
+}
+
 function isToday(dateStr) {
   if (!dateStr) return false;
   const d = new Date(dateStr);
@@ -103,6 +113,7 @@ export default function Dashboard() {
     pollingRef.current = setInterval(loadData, 10000);
     return () => clearInterval(pollingRef.current);
   }, []);
+
   useEffect(() => {
     const onMessage = (data) => {
       if (!data || !data.event) return;
@@ -110,7 +121,13 @@ export default function Dashboard() {
       if (data.event === "order_eta_updated") {
         setAllOrders((prev) =>
           prev.map((o) =>
-            String(o.id) === String(data.orderId)
+            String(o.order_uid || o.id) ===
+            String(
+              data.order_uid ||
+                data.order?.order_uid ||
+                data.orderId ||
+                data.order?.id
+            )
               ? { ...o, estimated_ready_at: data.estimated_ready_at }
               : o
           )
@@ -120,7 +137,9 @@ export default function Dashboard() {
       if (data.event === "order_updated" && data.order) {
         setAllOrders((prev) =>
           prev.map((o) =>
-            String(o.id) === String(data.order.id) ? { ...o, ...data.order } : o
+            String(o.order_uid) === String(data.order.order_uid)
+              ? { ...o, ...data.order }
+              : o
           )
         );
       }
@@ -428,9 +447,11 @@ export default function Dashboard() {
                   );
 
                   return (
-                    <div key={o.id} className="order-card">
+                    <div key={o.order_uid || o.id} className="order-card">
                       <div className="order-left">
-                        <div className="order-title">Order #{o.id}</div>
+                        <div className="order-title">
+                          Order #{shortOrderId(o)}
+                        </div>
 
                         <div className="order-meta">
                           {totalItems} item{totalItems !== 1 ? "s" : ""} •{" "}

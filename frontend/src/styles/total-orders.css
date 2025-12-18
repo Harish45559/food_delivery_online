@@ -283,3 +283,31 @@
     max-width: 180px;
   }
 }
+
+
+/* payment action buttons */
+.payment-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.payment-actions button {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(2, 6, 23, 0.1);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.payment-actions button:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.payment-actions .mark-paid {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}

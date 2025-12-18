@@ -211,7 +211,7 @@ export default function CheckoutForm({ onPaymentSuccess }) {
           const res = await api.createCashOrder(payload);
           if (!res) throw new Error("No response from server");
 
-          setMessage("Order placed (cash). Please pay on delivery/pickup.");
+          setMessage("Order placed (cash). Please pay on delivery/takeaway.");
           localStorage.removeItem("cart");
           localStorage.removeItem("cart_notes");
           localStorage.removeItem("inflight_payment_pid");
@@ -331,12 +331,12 @@ export default function CheckoutForm({ onPaymentSuccess }) {
           <input
             type="radio"
             name="deliveryType"
-            value="pickup"
-            checked={deliveryType === "pickup"}
-            onChange={() => setDeliveryType("pickup")}
+            value="take-away"
+            checked={deliveryType === "take-away"}
+            onChange={() => setDeliveryType("take-away")}
             style={{ width: 20, height: 20 }} // bigger radio
           />
-          Pick-Up
+          Take-Away
         </label>
       </div>
 
@@ -438,9 +438,9 @@ export default function CheckoutForm({ onPaymentSuccess }) {
       )}
 
       {/* for pickup, still collect name/phone and notes */}
-      {deliveryType === "pickup" && (
+      {deliveryType === "take-away" && (
         <>
-          <h3 style={{ marginBottom: 10 }}>Pick-Up details</h3>
+          <h3 style={{ marginBottom: 10 }}>take-away details</h3>
           <div style={{ display: "grid", gap: 8, marginBottom: 8 }}>
             <input
               value={name}
@@ -518,7 +518,7 @@ export default function CheckoutForm({ onPaymentSuccess }) {
             checked={paymentMethod === "cash"}
             onChange={() => setPaymentMethod("cash")}
           />{" "}
-          Cash (pay on pickup/delivery)
+          Cash (pay on take-away/delivery)
         </label>
       </div>
 

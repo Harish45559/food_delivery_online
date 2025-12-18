@@ -1,45 +1,51 @@
-// frontend/src/contexts/AuthContext.jsx
-import React, { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect } from "react";
 import api, { setAuthToken } from "../services/api";
 
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
-// frontend/src/contexts/AuthContext.jsx (replace useEffect)
-useEffect(() => {
-  async function init() {
-    const token = localStorage.getItem('token');
-    if (!token) { setReady(true); return; }
-    try {
-      setAuthToken(token); // your helper to set axios default header
-      // Try to fetch latest user from server
-      const res = await api.get('/auth/me'); // requires valid token
-      const serverUser = res.data?.user;
-      if (serverUser) {
-        // normalize keys if backend returns snake_case (optional)
-        const normalized = {
-          ...serverUser,
-          // addressLine1: serverUser.addressLine1 || serverUser.addressline1
-        };
-        localStorage.setItem('user', JSON.stringify(normalized));
-        setUser(normalized);
-      } else {
-        // fallback to stored user if server didn't return one
-        const stored = JSON.parse(localStorage.getItem('user') || 'null');
-        setUser(stored);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function init() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        if (mounted) setReady(true);
+        return;
       }
-    } catch (e) {
-      console.warn('Failed to refresh user from server', e);
-      // if token invalid, clear it
-      // localStorage.removeItem('token'); localStorage.removeItem('user');
-    } finally {
-      setReady(true);
+
+      try {
+        setAuthToken(token);
+
+        // Fetch latest user from backend
+        const res = await api.get("/auth/me");
+        const serverUser = res.data?.user || null;
+
+        if (serverUser && mounted) {
+          localStorage.setItem("user", JSON.stringify(serverUser));
+          setUser(serverUser);
+        } else if (mounted) {
+          const stored = JSON.parse(localStorage.getItem("user") || "null");
+          setUser(stored);
+        }
+      } catch (e) {
+        console.warn("Auth init failed, token may be invalid", e);
+        // optional hard logout:
+        // localStorage.removeItem("token");
+        // localStorage.removeItem("user");
+      } finally {
+        if (mounted) setReady(true);
+      }
     }
-  }
-  init();
-}, []);
+
+    init();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const login = (token, userData) => {
     if (token) {
@@ -52,14 +58,15 @@ useEffect(() => {
     }
   };
 
-const logout = () => {
-  console.trace("AuthContext.logout() called"); // <--- debug: shows stack where logout invoked
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  setAuthToken(null);
-  setUser(null);
-};
-
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {}
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setAuthToken(null);
+    setUser(null);
+  };
 
   const isAdmin = () => user?.role === "admin";
 

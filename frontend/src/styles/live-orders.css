@@ -364,3 +364,9 @@ body {
   border: 1px dashed rgba(2, 6, 23, 0.05);
   color: var(--muted);
 }
+
+.paid-by-top.unpaid {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px dashed #ffeeba;
+}

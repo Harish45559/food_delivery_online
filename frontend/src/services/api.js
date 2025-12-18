@@ -2,24 +2,29 @@ import axios from "axios";
 
 /**
  * Axios instance for normal API calls.
- * Use VITE_API_URL to point at the backend root, e.g. "http://localhost:4000"
- * When baseURL includes "/api" we keep axios calls consistent; SSE below uses base without trailing /api
+ * Use VITE_API_URL to point at the backend root, e.g. "http://localhost:4000/api"
  */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000/api",
 });
 
-// auth helper
+/* ---------------------------------------
+   AUTH
+---------------------------------------- */
+
 export function setAuthToken(token) {
-  if (token) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  else delete api.defaults.headers.common["Authorization"];
+  if (token) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common["Authorization"];
+  }
 }
 
-/* -------------------------------
-   STRIPE CHECKOUT + ORDER ROUTES
--------------------------------- */
+/* ---------------------------------------
+   STRIPE / PAYMENTS
+---------------------------------------- */
 
-// Create PaymentIntent
+// Create PaymentIntent (card)
 api.createPaymentIntent = async (payload) => {
   const res = await api.post("/payments/create-payment-intent", payload);
   return res.data;
@@ -31,42 +36,62 @@ api.createCashOrder = async (payload) => {
   return res.data;
 };
 
-// Order history
+/* ---------------------------------------
+   ORDERS (UUID SAFE)
+---------------------------------------- */
+
+// Fetch orders (current user / admin)
 api.fetchOrders = async () => {
   const res = await api.get("/orders");
   return res.data;
 };
 
-// Order by PaymentIntent ID
+// Get order by Stripe PID
 api.fetchOrderByPid = async (pid) => {
   const res = await api.get(`/orders/by-pid/${pid}`);
   return res.data;
 };
 
-// Update status
+// Update order status (ADMIN / KITCHEN) — UUID
 api.updateOrderStatus = async (id, status) => {
   const res = await api.patch(`/orders/${id}`, { status });
   return res.data;
 };
-
 /* ---------------------------------------
-   ETA adjustment helper (new)
-   POST /orders/:id/adjust_eta  { delta_minutes: -5|+5|... }
-   Server should persist estimated_ready_at and broadcast SSE order_updated.
+   ADMIN PAYMENT ACTIONS (UUID)
 ---------------------------------------- */
 
-api.adjustOrderEta = async (orderId, payload) => {
-  const res = await api.post(`/orders/${orderId}/adjust_eta`, payload);
+// Change payment method (cash | card)
+api.changePaymentMethod = async (orderUid, paymentMethod) => {
+  const res = await api.patch(`/orders/${orderUid}/payment-method`, {
+    paymentMethod,
+  });
+  return res.data;
+};
+
+// Mark order as paid
+api.markOrderAsPaid = async (orderUid) => {
+  const res = await api.patch(`/orders/${orderUid}/pay`);
   return res.data;
 };
 
 /* ---------------------------------------
-   USER ADDRESSES ROUTES
+   ETA ADJUSTMENT (UUID)
+---------------------------------------- */
+
+// POST /orders/:orderUid/adjust_eta
+api.adjustOrderEta = async (orderUid, payload) => {
+  const res = await api.post(`/orders/${orderUid}/adjust_eta`, payload);
+  return res.data;
+};
+
+/* ---------------------------------------
+   USER ADDRESSES
 ---------------------------------------- */
 
 api.getUserAddresses = async () => {
   const res = await api.get("/addresses");
-  return res.data; // expected { addresses: [...] }
+  return res.data;
 };
 
 api.createUserAddress = async (payload) => {
